@@ -1,4 +1,4 @@
-package ru.sstu.mt.util.enums;
+package ru.sstu.mt.sklonyator.enums;
 
 import java.util.Arrays;
 
@@ -40,7 +40,7 @@ public enum RussianPoS {
 
     public static RussianPoS getBySystemName(String systemName) {
         return Arrays.stream(values())
-                .filter(pos -> pos.systemName.equalsIgnoreCase(systemName))
+                .filter(pos -> pos.systemName.equalsIgnoreCase(systemName.toUpperCase()))
                 .findFirst().orElse(null);
     }
 }

@@ -12,6 +12,8 @@ import opennlp.tools.parser.ParserModel;
 import ru.sstu.mt.analysis.opennlp.ModelSource;
 import ru.sstu.mt.analysis.stanfordnlp.StanfordUtils;
 import ru.sstu.mt.dictionary.Dictionary;
+import ru.sstu.mt.sklonyator.SklonyatorApi;
+import ru.sstu.mt.sklonyator.enums.RussianPoS;
 import ru.sstu.mt.util.ParsePrettyPrinter;
 import ru.sstu.mt.intermediate.model.IRNode;
 
@@ -52,8 +54,15 @@ public class Main {
             setInfinitives(stanfordNLP, ir);
             translateIR(dictionary, ir);
 
-            System.out.println(ir.getLeafs().stream().map(IRNode::getEngInfinitive).collect(Collectors.joining(" ")));
-            System.out.println(ir.getLeafs().stream().map(IRNode::getRusInfinitive).collect(Collectors.joining(" ")));
+            List<IRNode> leafs = ir.getLeafs();
+
+            SklonyatorApi sklonyator = getSklonyator();
+            RussianPoS pos = sklonyator.getPos(leafs.get(0).getRusInfinitive());
+            System.out.println(pos);
+            System.out.println(sklonyator.getLimit());
+
+            System.out.println(leafs.stream().map(IRNode::getEngInfinitive).collect(Collectors.joining(" ")));
+            System.out.println(leafs.stream().map(IRNode::getRusInfinitive).collect(Collectors.joining(" ")));
             new ParsePrettyPrinter().prettyPrint(ir.toString());
         }
     }

@@ -1,6 +1,6 @@
 package ru.sstu.mt.analysis.russian;
 
-import ru.sstu.mt.util.enums.RussianPoS;
+import ru.sstu.mt.sklonyator.enums.RussianPoS;
 
 /**
  * Интерфейс получения части речи для слова на русском языке

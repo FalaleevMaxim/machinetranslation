@@ -12,10 +12,14 @@ import ru.sstu.mt.analysis.opennlp.ModelSource;
 import ru.sstu.mt.analysis.stanfordnlp.StanfordNlpSource;
 import ru.sstu.mt.dictionary.Dictionary;
 import ru.sstu.mt.intermediate.model.IRNode;
+import ru.sstu.mt.intermediate.transform.IRTransform;
+import ru.sstu.mt.sklonyator.SklonyatorApi;
+import ru.sstu.mt.sklonyator.SklonyatorApiImpl;
 import ru.sstu.mt.util.NameTransliteration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -76,18 +80,38 @@ public class Pipeline {
     }
 
     /**
+     * Возвращает список правил, которые отрабатывают до перевода инфинитивов на русский.
+     * Это будут правила, которые обрабатывают особые случаи переводов для устойчивых выражений, меняют английские слова или устанавливают переводы на русский, не используя словарь.
+     */
+    public static List<IRTransform> getPreTransforms() {
+        return Collections.emptyList(); //ToDo добавить правила
+    }
+
+    /**
+     * Возвращает список правил, которые отрабатывают после перевода инфинитивов на русский
+     */
+    public static List<IRTransform> getPostTransforms() {
+        return Collections.emptyList(); //ToDo добавить правила
+    }
+
+    /**
      * Преобразования дерева перед переводом
      * @param ir
-     * @return
+     * @return Трансформации, которые успешно отработали
      */
-    public static IRNode preTransformIR(IRNode ir) {
-        //ToDo примнять правила преобразований
-        return ir;
+    public List<IRTransform> preTransformIR(IRNode ir) {
+        return getPreTransforms().stream()
+                .filter(ir::applyTransform)
+                .collect(Collectors.toList());
     }
 
     public static Dictionary getDictionary() throws IOException {
         String fileName = ClassLoader.getSystemClassLoader().getResource("ENRUS.TXT").getFile();
         return Dictionary.readDictionary(new File(fileName));
+    }
+
+    public static SklonyatorApi getSklonyator() {
+        return new SklonyatorApiImpl();
     }
 
     /**
@@ -111,8 +135,10 @@ public class Pipeline {
     /**
      * Согласование падежей и прочих грамматических признаков слов
      */
-    public static void matchGrammems() {
-        //ToDo применять правила определения и согласования падежей
+    public static List<IRTransform> matchGrammems(IRNode ir) {
+        return getPostTransforms().stream()
+                .filter(ir::applyTransform)
+                .collect(Collectors.toList());
     }
 
     /**

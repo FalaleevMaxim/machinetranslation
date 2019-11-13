@@ -2,6 +2,8 @@ package ru.sstu.mt.intermediate.model;
 
 import opennlp.tools.parser.Parse;
 import opennlp.tools.util.Span;
+import ru.sstu.mt.intermediate.transform.IRTransform;
+import ru.sstu.mt.sklonyator.enums.RussianGrammems;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,6 +17,7 @@ public class IRNode {
     private String engInfinitive;
     private String rusInfinitive;
     private String rusTransformed;
+    private List<RussianGrammems> grammems;
 
     private List<IRNode> children = new ArrayList<>();
 
@@ -22,7 +25,7 @@ public class IRNode {
         int start;
         start = parse.getSpan().getStart();
         this.type = parse.getType();
-        if(parse.getChildCount()==1 && "TK".equals(parse.getChildren()[0].getType())) {
+        if (parse.getChildCount() == 1 && "TK".equals(parse.getChildren()[0].getType())) {
             this.engOriginal = parse.getChildren()[0].getText();
         } else {
             for (Parse c : parse.getChildren()) {
@@ -33,6 +36,9 @@ public class IRNode {
         }
         if (start < parse.getSpan().getEnd()) {
             this.engOriginal = parse.getText().substring(start, parse.getSpan().getEnd());
+        }
+        if (!children.isEmpty()) {
+            grammems = new ArrayList<>();
         }
     }
 
@@ -85,11 +91,29 @@ public class IRNode {
 
     @Override
     public String toString() {
-        return ("(" + type + ' ' + (engOriginal!=null?engOriginal:"") + (children.size()!=0?children.toString():"") + ')').replaceAll("[\\[\\],]|\\(\\)", "");
+        return ("(" + type + ' ' + (engOriginal != null ? engOriginal : "") + (children.size() != 0 ? children.toString() : "") + ')').replaceAll("[\\[\\],]|\\(\\)", "");
     }
 
     public List<IRNode> getLeafs() {
-        if(children.isEmpty()) return Collections.singletonList(this);
+        if (children.isEmpty()) return Collections.singletonList(this);
         return children.stream().map(IRNode::getLeafs).flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    public boolean applyTransform(IRTransform transform) {
+        boolean applied = false;
+        if(transform.performIfPossible(this)) applied = true;
+        for (IRNode child : children) {
+            if(child.applyTransform(transform)) applied = true;
+        }
+        return true;
+    }
+
+    public List<RussianGrammems> getGrammems() {
+        return grammems;
+    }
+
+    public IRNode setGrammems(List<RussianGrammems> grammems) {
+        this.grammems = grammems;
+        return this;
     }
 }
