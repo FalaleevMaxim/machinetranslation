@@ -1,18 +1,17 @@
 package ru.sstu.mt.sklonyator;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.sstu.mt.sklonyator.enums.RussianGrammems;
-import ru.sstu.mt.sklonyator.enums.RussianPoS;
+import ru.sstu.mt.sklonyator.enums.RussianPos;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SklonyatorApiImpl implements SklonyatorApi {
@@ -25,28 +24,13 @@ public class SklonyatorApiImpl implements SklonyatorApi {
     private int limit = -1;
 
     @Override
-    public RussianPoS getPos(String word) throws IOException {
-        JsonNode node = request(String.format(POS_URL, word));
-
-        String posStr = node.get("0").asText();
-        setLimit(node);
-
-        return RussianPoS.getBySystemName(posStr);
+    public List<RussianPos> getPos(String word) throws IOException {
+        return requestList(String.format(POS_URL, word), RussianPos::getBySystemName);
     }
 
     @Override
     public List<RussianGrammems> getGrammems(String word) throws IOException {
-        JsonNode node = request(String.format(GRAMMEMS_URL, word));
-
-        List<RussianGrammems> grammems = new ArrayList<>();
-        for (int i = 0; ; i++) {
-            JsonNode n = node.get(Integer.toString(i));
-            if(n==null) break;
-            String gramStr = n.asText();
-            grammems.add(RussianGrammems.getBySystemName(gramStr));
-        }
-        setLimit(node);
-        return grammems;
+        return requestList(String.format(GRAMMEMS_URL, word), RussianGrammems::getBySystemName);
     }
 
     @Override
@@ -54,17 +38,20 @@ public class SklonyatorApiImpl implements SklonyatorApi {
         String grammemsStr = grammems.stream()
                 .map(RussianGrammems::getSystemName)
                 .collect(Collectors.joining(","));
-        JsonNode node = request(String.format(FORMAT_URL, word, grammemsStr));
+        return requestList(String.format(FORMAT_URL, word, grammemsStr), x->x);
+    }
 
-        List<String> transforms = new ArrayList<>();
+    private <T> List<T> requestList(String url, Function<String, T> mapping) throws IOException {
+        JsonNode node = request(url);
+
+        List<T> results = new ArrayList<>();
         for (int i = 0; ; i++) {
             JsonNode n = node.get(Integer.toString(i));
             if(n==null) break;
-            transforms.add(n.asText());
+            results.add(mapping.apply(n.asText()));
         }
         setLimit(node);
-        return transforms;
-
+        return results;
     }
 
     private JsonNode request(String url) throws IOException {

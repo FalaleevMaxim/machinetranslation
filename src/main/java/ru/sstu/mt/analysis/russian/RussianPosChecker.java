@@ -1,10 +1,10 @@
 package ru.sstu.mt.analysis.russian;
 
-import ru.sstu.mt.sklonyator.enums.RussianPoS;
+import ru.sstu.mt.sklonyator.enums.RussianPos;
 
 /**
  * Интерфейс получения части речи для слова на русском языке
  */
 public interface RussianPosChecker {
-    RussianPoS getPos(String word);
+    RussianPos getPos(String word);
 }

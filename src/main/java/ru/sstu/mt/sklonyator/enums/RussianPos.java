@@ -2,7 +2,7 @@ package ru.sstu.mt.sklonyator.enums;
 
 import java.util.Arrays;
 
-public enum RussianPoS {
+public enum RussianPos {
     NOUN("С", "существительное", ""),
     ADJ("П", "прилагательное", ""),
     SHORT_ADJ("КР_ПРИЛ", "краткое прилагательное", ""),
@@ -20,25 +20,26 @@ public enum RussianPoS {
     PREP("ПРЕДЛ", "предлог", ""),
     CONJ("СОЮЗ", "союз", "и"),
     INTERJ("МЕЖД", "междометие", ""),
-    PART("ЧАСТ", "частица", "");
+    PART("ЧАСТ", "частица", ""),
+    PHRASE("ФРАЗ", "фраза", "");
 
     public final String systemName;
     public final String description;
     public final String example;
 
-    RussianPoS(String systemName, String description, String example) {
+    RussianPos(String systemName, String description, String example) {
         this.systemName = systemName;
         this.description = description;
         this.example = example;
     }
 
-    public static RussianPoS getByDescription(String description) {
+    public static RussianPos getByDescription(String description) {
         return Arrays.stream(values())
                 .filter(pos -> pos.description.equalsIgnoreCase(description))
                 .findFirst().orElse(null);
     }
 
-    public static RussianPoS getBySystemName(String systemName) {
+    public static RussianPos getBySystemName(String systemName) {
         return Arrays.stream(values())
                 .filter(pos -> pos.systemName.equalsIgnoreCase(systemName.toUpperCase()))
                 .findFirst().orElse(null);

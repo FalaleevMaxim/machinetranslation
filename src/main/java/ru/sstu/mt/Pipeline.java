@@ -13,12 +13,14 @@ import ru.sstu.mt.analysis.stanfordnlp.StanfordNlpSource;
 import ru.sstu.mt.dictionary.Dictionary;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.IRTransform;
+import ru.sstu.mt.intermediate.transform.pre.*;
 import ru.sstu.mt.sklonyator.SklonyatorApi;
 import ru.sstu.mt.sklonyator.SklonyatorApiImpl;
 import ru.sstu.mt.util.NameTransliteration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -84,7 +86,12 @@ public class Pipeline {
      * Это будут правила, которые обрабатывают особые случаи переводов для устойчивых выражений, меняют английские слова или устанавливают переводы на русский, не используя словарь.
      */
     public static List<IRTransform> getPreTransforms() {
-        return Collections.emptyList(); //ToDo добавить правила
+        return Arrays.asList(new EmptyDT(),
+                new EmptyDoInQuestion(),
+                new MakeSureThat(),
+                new MakeSureTo(),
+                new PunctuationStaysSame(),
+                new PresentPerfect());
     }
 
     /**
@@ -99,7 +106,7 @@ public class Pipeline {
      * @param ir
      * @return Трансформации, которые успешно отработали
      */
-    public List<IRTransform> preTransformIR(IRNode ir) {
+    public static List<IRTransform> preTransformIR(IRNode ir) {
         return getPreTransforms().stream()
                 .filter(ir::applyTransform)
                 .collect(Collectors.toList());
@@ -121,6 +128,7 @@ public class Pipeline {
      */
     public static void translateIR(Dictionary dictionary, IRNode ir) {
         for (IRNode leaf : ir.getLeafs()) {
+            if(leaf.getRusInfinitive()!=null) continue;
             if(leaf.getType().equals("NNP")) {
                 leaf.setRusInfinitive(NameTransliteration.translit(leaf.getEngInfinitive()));
             } else {

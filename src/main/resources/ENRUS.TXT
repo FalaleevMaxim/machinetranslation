@@ -32935,7 +32935,7 @@ find markets
 finder
 искатель
 finding
-обнаружение
+находка
 findings
 сведение
 fine
@@ -91603,7 +91603,7 @@ tomahawk
 tomato
 томат	томатный
 tomb
-могила
+гробница
 tomboy
 сорванец
 tombstone

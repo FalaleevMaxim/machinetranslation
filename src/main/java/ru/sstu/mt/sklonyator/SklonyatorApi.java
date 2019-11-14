@@ -1,16 +1,17 @@
 package ru.sstu.mt.sklonyator;
 
+import ru.sstu.mt.dictionary.PosDetector;
 import ru.sstu.mt.sklonyator.enums.RussianGrammems;
-import ru.sstu.mt.sklonyator.enums.RussianPoS;
+import ru.sstu.mt.sklonyator.enums.RussianPos;
 
 import java.io.IOException;
 import java.util.List;
 
-public interface SklonyatorApi {
+public interface SklonyatorApi extends PosDetector {
     /**
      * Получение части речи слова
      */
-    RussianPoS getPos(String word) throws IOException;
+    List<RussianPos> getPos(String word) throws IOException;
 
     /**
      * Перевод слова к заданным формам

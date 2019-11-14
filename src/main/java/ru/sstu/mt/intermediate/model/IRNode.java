@@ -79,6 +79,11 @@ public class IRNode {
         this.rusTransformed = rusTransformed;
     }
 
+    public void doNotTranslate() {
+        setRusInfinitive("");
+        setRusTransformed("");
+    }
+
     public List<IRNode> getChildren() {
         return children;
     }
@@ -92,6 +97,22 @@ public class IRNode {
     @Override
     public String toString() {
         return ("(" + type + ' ' + (engOriginal != null ? engOriginal : "") + (children.size() != 0 ? children.toString() : "") + ')').replaceAll("[\\[\\],]|\\(\\)", "");
+    }
+
+    public String getFullEngOriginal() {
+        return getLeafs().stream().map(IRNode::getEngOriginal).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
+    }
+
+    public String getFullEngInfinitive() {
+        return getLeafs().stream().map(IRNode::getEngInfinitive).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
+    }
+
+    public String getFullRusInfinitive() {
+        return getLeafs().stream().map(IRNode::getRusInfinitive).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
+    }
+
+    public String getFullRusTransformed() {
+        return getLeafs().stream().map(IRNode::getRusTransformed).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
     }
 
     public List<IRNode> getLeafs() {

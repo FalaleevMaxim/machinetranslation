@@ -2,10 +2,9 @@ package ru.sstu.mt.intermediate.transform;
 
 import ru.sstu.mt.intermediate.model.IRNode;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class NodeCriteria {
     /**
@@ -34,6 +33,12 @@ public class NodeCriteria {
     private NodeCriteria[] innerNodeCriterias;
 
     /**
+     * Проверка узла, следующего сразу за данным.
+     * Невозможно проверить, если эта проверка корневая
+     */
+    private NodeCriteria following;
+
+    /**
      * Предикат для дополнительных проверок, для которых недостаточно полей выше.
      * Принимает текущий узел и переменные, найденные при обходе
      */
@@ -53,21 +58,33 @@ public class NodeCriteria {
         if(!match(rusInfinitive, node.getRusInfinitive())) return null;
 
         Map<String, IRNode> result = new HashMap<>();
-        if(innerNodeCriterias.length>0) {
-            int i = 0;
-            for (IRNode child : node.getChildren()) {
-                Map<String, IRNode> temp = innerNodeCriterias[i].query(child);
-                if(temp==null) continue;
+        if(innerNodeCriterias!=null) {
+            int criteriaIndex = 0;
+            List<IRNode> children = node.getChildren();
+            for (int i = 0; i < children.size(); i++) {
+                IRNode child = children.get(i);
+                Map<String, IRNode> temp = innerNodeCriterias[criteriaIndex].query(child);
+                if (temp == null) continue;
+                if(innerNodeCriterias[criteriaIndex].following!=null) {
+                    Map<String, IRNode> checkFollowing = checkFollowing(children, i, innerNodeCriterias[criteriaIndex].following);
+                    if(checkFollowing==null) continue;
+                    temp.putAll(checkFollowing);
+                }
                 result.putAll(temp);
-                if(++i==innerNodeCriterias.length) break;
+                if (++criteriaIndex == innerNodeCriterias.length) break;
             }
-            if(i<innerNodeCriterias.length) return null;
+            if(criteriaIndex<innerNodeCriterias.length) return null;
         }
         result.put(name, node);
         if(otherConditions!=null) {
             if(!otherConditions.test(node, result)) return null;
         }
         return result;
+    }
+
+    private Map<String, IRNode> checkFollowing (List<IRNode> children, int index, NodeCriteria followingCriteria) {
+        if (index == children.size()) return null;
+        return followingCriteria.query(children.get(index+1));
     }
 
     private boolean match(Object criteria, Object node) {
@@ -105,8 +122,48 @@ public class NodeCriteria {
         return this;
     }
 
-    public NodeCriteria setName(String name) {
+    public NodeCriteria named(String name) {
         this.name = name;
         return this;
+    }
+
+    public NodeCriteria followedBy(NodeCriteria following) {
+        this.following = following;
+        return this;
+    }
+
+    public boolean valid() {
+        List<String> vars = allVars();
+        Set<String> distinct = new HashSet<>();
+        for (String var : vars) {
+            if(!distinct.add(var)) return false;
+        }
+        return true;
+    }
+
+    private List<String> allVars() {
+        if(innerNodeCriterias==null){
+            return name==null? Collections.emptyList():Collections.singletonList(name);
+        }
+        List<String> vars = Arrays.stream(innerNodeCriterias).map(NodeCriteria::allVars).flatMap(Collection::stream).collect(Collectors.toList());
+        if(name!=null) vars.add(name);
+        return vars;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        appendIfNotNull(sb, type, "type");
+        appendIfNotNull(sb, engOriginal, "original");
+        appendIfNotNull(sb, engInfinitive, "infinitive");
+        appendIfNotNull(sb, engInfinitive, "translated");
+        if(innerNodeCriterias!=null) sb.append("inner checks; ");
+        if(following!=null) sb.append("following check; ");
+        String s = sb.toString();
+        return s.isEmpty()?"empty check":s;
+    }
+
+    private void appendIfNotNull(StringBuilder sb, String field, String display) {
+        if(field!=null) sb.append(display).append(" = ").append(field).append("; ");
     }
 }

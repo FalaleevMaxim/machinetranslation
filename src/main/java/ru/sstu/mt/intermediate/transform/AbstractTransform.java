@@ -7,7 +7,7 @@ import java.util.Map;
 public abstract class AbstractTransform implements IRTransform {
     private final NodeCriteria criteria;
 
-    protected AbstractTransform(NodeCriteria criteria) {
+    public AbstractTransform(NodeCriteria criteria) {
         this.criteria = criteria;
     }
 
