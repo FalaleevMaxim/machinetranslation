@@ -1,6 +1,7 @@
 package ru.sstu.mt.intermediate.transform;
 
 import ru.sstu.mt.intermediate.model.IRNode;
+import ru.sstu.mt.sklonyator.enums.RussianPos;
 
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -10,22 +11,27 @@ public class NodeCriteria {
     /**
      * Тип узла
      */
-    private String type;
+    private String[] types;
 
     /**
      * Оригинальный текст
      */
-    private String engOriginal;
+    private String[] engOriginal;
 
     /**
      * Начальная форма слова в английском
      */
-    private String engInfinitive;
+    private String[] engInfinitive;
 
     /**
      * Начальная форма на русском
      */
-    private String rusInfinitive;
+    private String[] rusInfinitive;
+
+    /**
+     * Часть речи
+     */
+    private RussianPos pos;
 
     /**
      *  Проверки для узлов-потомков
@@ -52,7 +58,7 @@ public class NodeCriteria {
      * @return Переменные, определённые критериями узлов или {code null} если узел не соответствует запросу.
      */
     public Map<String, IRNode> query(IRNode node) {
-        if(!match(type, node.getType())) return null;
+        if (!match(types, node.getType())) return null;
         if(!match(engOriginal, node.getEngOriginal())) return null;
         if(!match(engInfinitive, node.getEngInfinitive())) return null;
         if(!match(rusInfinitive, node.getRusInfinitive())) return null;
@@ -87,27 +93,30 @@ public class NodeCriteria {
         return followingCriteria.query(children.get(index+1));
     }
 
-    private boolean match(Object criteria, Object node) {
+    private boolean match(String[] criteria, String node) {
         if(criteria==null) return true;
-        return criteria.equals(node);
+        for (String option : criteria) {
+            if (option.equalsIgnoreCase(node)) return true;
+        }
+        return false;
     }
 
-    public NodeCriteria withType(String type) {
-        this.type = type;
+    public NodeCriteria withType(String... types) {
+        this.types = types;
         return this;
     }
 
-    public NodeCriteria withEngOriginal(String engOriginal) {
+    public NodeCriteria withEngOriginal(String... engOriginal) {
         this.engOriginal = engOriginal;
         return this;
     }
 
-    public NodeCriteria withEngInfinitive(String engInfinitive) {
+    public NodeCriteria withEngInfinitive(String... engInfinitive) {
         this.engInfinitive = engInfinitive;
         return this;
     }
 
-    public NodeCriteria withRusInfinitive(String rusInfinitive) {
+    public NodeCriteria withRusInfinitive(String... rusInfinitive) {
         this.rusInfinitive = rusInfinitive;
         return this;
     }
@@ -153,7 +162,7 @@ public class NodeCriteria {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        appendIfNotNull(sb, type, "type");
+        appendIfNotNull(sb, types, "types");
         appendIfNotNull(sb, engOriginal, "original");
         appendIfNotNull(sb, engInfinitive, "infinitive");
         appendIfNotNull(sb, engInfinitive, "translated");
@@ -163,7 +172,7 @@ public class NodeCriteria {
         return s.isEmpty()?"empty check":s;
     }
 
-    private void appendIfNotNull(StringBuilder sb, String field, String display) {
-        if(field!=null) sb.append(display).append(" = ").append(field).append("; ");
+    private void appendIfNotNull(StringBuilder sb, String[] field, String display) {
+        if (field != null) sb.append(display).append(" = ").append(Arrays.toString(field)).append("; ");
     }
 }

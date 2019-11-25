@@ -1,4 +1,4 @@
-package ru.sstu.mt.intermediate.transform.pre;
+package ru.sstu.mt.intermediate.transform.pre.phrases;
 
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class MakeSureTo extends AbstractTransform {
     public MakeSureTo() {
-        super(new NodeCriteria()
+        super(null, new NodeCriteria()
                 .withType("VP")
                 .withInnerNodeCriterias(
                         new NodeCriteria()

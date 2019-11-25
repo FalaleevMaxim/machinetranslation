@@ -1,58 +1,61 @@
 package ru.sstu.mt;
 
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import opennlp.tools.parser.Parser;
+import opennlp.tools.parser.ParserModel;
 import ru.sstu.mt.dictionary.Dictionary;
+import ru.sstu.mt.pipeline.LoggingMode;
+import ru.sstu.mt.pipeline.PipelineEvent;
+import ru.sstu.mt.pipeline.PipelineLogger;
 import ru.sstu.mt.sklonyator.SklonyatorApi;
-import ru.sstu.mt.util.ParsePrettyPrinter;
-import ru.sstu.mt.intermediate.model.IRNode;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
-
-import static ru.sstu.mt.Pipeline.*;
 
 public class Main {
 
     public static void main(String[] args) throws IOException {
-        /*ParserModel parserModel = ModelSource.getParserModel();
-        Parser parser = ParserFactory.create(parserModel);
-
+        ParserModel parserModel = null;
+        Parser parser = null;
+        Dictionary dictionary = null;
+        StanfordCoreNLP stanfordNLP = null;
+        SklonyatorApi sklonyator = null;
         Scanner sc = new Scanner(System.in);
         while (sc.hasNext()) {
             String sentence = sc.nextLine();
-            Parse[] parses = ParserTool.parseLine(sentence, parser, 1);
-            Parse parse = parses[0];
-            new ParsePrettyPrinter().prettyPrint(new IRNode(parse).toString());
-            System.out.println(StanfordUtils.getWordsInfo(sentence)
-                    .stream()
-                    .map(StanfordUtils.WordInfo::toString)
-                    .collect(Collectors.joining("\n")));
-        }*/
+            Pipeline pipeline = new Pipeline(sentence)
+                    .setParserModel(parserModel)
+                    .setParser(parser)
+                    .setDictionary(dictionary)
+                    .setStanfordNLP(stanfordNLP)
+                    .setSklonyator(sklonyator);
+            setPipelineParams(pipeline);
+            pipeline.translateIR();
 
-        Dictionary dictionary = getDictionary();
-        StanfordCoreNLP stanfordNLP = getStanfordNLP();
+            if (parser == null) parser = pipeline.getParser();
+            if (dictionary == null) dictionary = pipeline.getDictionary();
+            if (stanfordNLP == null) stanfordNLP = pipeline.getStanfordNLP();
+            if (sklonyator == null) sklonyator = pipeline.getSklonyator();
+            if (sklonyator != null && sklonyator.getLimit() >= 0) {
+                System.err.println("Sklonyator limit: " + sklonyator.getLimit());
+            }
+        }
+    }
 
-        Scanner sc = new Scanner(System.in);
-        while (sc.hasNext()) {
-            String sentence = sc.nextLine();
-
-            IRNode ir = new IRNode(parseNlp(sentence, createParser(getParserModel())));
-            setInfinitives(stanfordNLP, ir);
-            translateIR(dictionary, ir);
-            preTransformIR(ir);
-
-            List<IRNode> leafs = ir.getLeafs();
-
-            /*SklonyatorApi sklonyator = getSklonyator();
-            RussianPoS pos = sklonyator.getPos(leafs.get(0).getRusInfinitive());
-            System.out.println(pos);
-            System.out.println(sklonyator.getLimit());*/
-
-            System.out.println(ir.getFullEngInfinitive());
-            System.out.println(ir.getFullRusInfinitive());
-            new ParsePrettyPrinter().prettyPrint(ir.toString());
+    private static void setPipelineParams(Pipeline pipeline) {
+        String sklonyatorApiKey = System.getProperty("sklonyatorApiKey");
+        String dictionaryFilePath = System.getProperty("dictionaryFilePath");
+        if (sklonyatorApiKey != null) pipeline.setSklonyatorApiKey(sklonyatorApiKey);
+        if (dictionaryFilePath != null) pipeline.setDictionaryFilePath(dictionaryFilePath);
+        PipelineLogger logger = pipeline.getLogger();
+        for (PipelineEvent event : PipelineEvent.values()) {
+            String property = System.getProperty("log_" + event.name());
+            if (property == null) continue;
+            try {
+                LoggingMode loggingMode = LoggingMode.valueOf(property);
+                logger.setLogMode(loggingMode, event);
+            } catch (IllegalArgumentException ignored) {
+            }
         }
     }
 }

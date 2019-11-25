@@ -5,9 +5,12 @@ import ru.sstu.mt.intermediate.model.IRNode;
 import java.util.Map;
 
 public abstract class AbstractTransform implements IRTransform {
+    private final String desc;
     private final NodeCriteria criteria;
 
-    public AbstractTransform(NodeCriteria criteria) {
+    public AbstractTransform(String desc, NodeCriteria criteria) {
+        if (desc == null) desc = getClass().getSimpleName();
+        this.desc = desc;
         this.criteria = criteria;
     }
 
@@ -31,4 +34,13 @@ public abstract class AbstractTransform implements IRTransform {
      * @param queryResults Узлы, найденные в результате запроса критериев
      */
     public abstract void perform(IRNode ir, Map<String, IRNode> queryResults);
+
+    public String getDesc() {
+        return desc;
+    }
+
+    @Override
+    public String toString() {
+        return desc;
+    }
 }

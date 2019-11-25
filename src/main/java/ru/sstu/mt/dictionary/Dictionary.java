@@ -2,15 +2,16 @@ package ru.sstu.mt.dictionary;
 
 import ru.sstu.mt.sklonyator.enums.RussianPos;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Dictionary {
     private Map<String, List<Translation>> content = new HashMap<>();
     private PosDetector posDetector;
-
-
 
     public static Dictionary readDictionary(File file) throws IOException {
         Dictionary dictionary = new Dictionary();
@@ -52,26 +53,35 @@ public class Dictionary {
     }
 
     public String getTranslation(String word) {
-        return getTranslation(word, null);
+        return getTranslation(word, Collections.emptySet());
     }
 
-    public String getTranslation(String word, RussianPos pos) {
+    public String getTranslation(String word, RussianPos... pos) {
+        return getTranslation(word, new HashSet<>(Arrays.asList(pos)));
+    }
+
+    public String getTranslation(String word, Set<RussianPos> pos) {
         word = word.toLowerCase();
         if(!containsTranslationFor(word)) return null;
         List<Translation> translationList = content.get(word);
-        if(pos==null) return translationList.get(0).word;
+        if (pos == null || pos.isEmpty()) return translationList.get(0).word;
         return translationList.stream()
-                .filter(translation -> translation.pos.contains(pos))
+                .filter(translation -> checkPos(translation, pos))
                 .map(Translation::getWord)
                 .min(Comparator.comparingInt(s -> s.split(" ").length))
-                .orElse(null);
+                .orElse(translationList.get(0).getWord());
     }
 
-    public List<String> getTranslations(String word, RussianPos pos) {
+    public List<String> getTranslations(String word, RussianPos... pos) {
+        return getTranslations(word, new HashSet<>(Arrays.asList(pos)));
+    }
+
+    public List<String> getTranslations(String word, Set<RussianPos> pos) {
         word = word.toLowerCase();
         if(!containsTranslationFor(word)) return Collections.emptyList();
         List<Translation> translationList = content.get(word);
-        if(pos==null) return translationList.stream().map(Translation::getWord).collect(Collectors.toList());
+        if (pos == null || pos.isEmpty())
+            return translationList.stream().map(Translation::getWord).collect(Collectors.toList());
         return translationList.stream()
                 .filter(translation -> checkPos(translation, pos))
                 .map(Translation::getWord)
@@ -91,13 +101,13 @@ public class Dictionary {
         translations.add(tr);
     }
 
-    private boolean checkPos(Translation translation, RussianPos pos) {
+    private boolean checkPos(Translation translation, Set<RussianPos> set) {
         if(translation.pos==null) {
             if(posDetector==null) return false;
             try {
                 if(translation.word.split(" ").length>1) {
                     translation.pos = Collections.singleton(RussianPos.PHRASE);
-                    return RussianPos.PHRASE.equals(pos);
+                    return set.contains(RussianPos.PHRASE);
                 }
                 translation.pos = new HashSet<>(posDetector.getPos(translation.word));
             } catch (Exception e) {
@@ -105,7 +115,7 @@ public class Dictionary {
                 return false;
             }
         }
-        return translation.pos.contains(pos);
+        return translation.pos.stream().anyMatch(set::contains);
     }
 
     public Dictionary withPosDetector(PosDetector posDetector) {

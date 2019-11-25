@@ -4,11 +4,10 @@ import opennlp.tools.parser.Parse;
 import opennlp.tools.util.Span;
 import ru.sstu.mt.intermediate.transform.IRTransform;
 import ru.sstu.mt.sklonyator.enums.RussianGrammems;
+import ru.sstu.mt.sklonyator.enums.RussianPos;
+import ru.sstu.mt.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class IRNode {
@@ -17,9 +16,18 @@ public class IRNode {
     private String engInfinitive;
     private String rusInfinitive;
     private String rusTransformed;
-    private List<RussianGrammems> grammems;
+    private Set<RussianGrammems> grammems;
+    /**
+     * Возможные части речи для перевода по словарю
+     */
+    private Set<RussianPos> posForDictionary;
+    /**
+     * Часть речи для склонения
+     */
+    private RussianPos pos;
 
     private List<IRNode> children = new ArrayList<>();
+    private IRNode parent;
 
     public IRNode(Parse parse) {
         int start;
@@ -30,16 +38,16 @@ public class IRNode {
         } else {
             for (Parse c : parse.getChildren()) {
                 Span s = c.getSpan();
-                children.add(new IRNode(c));
+                IRNode child = new IRNode(c);
+                child.parent = this;
+                children.add(child);
                 start = s.getEnd();
             }
         }
         if (start < parse.getSpan().getEnd()) {
             this.engOriginal = parse.getText().substring(start, parse.getSpan().getEnd());
         }
-        if (!children.isEmpty()) {
-            grammems = new ArrayList<>();
-        }
+        grammems = new HashSet<>();
     }
 
     public IRNode(String type, String engOriginal) {
@@ -100,41 +108,73 @@ public class IRNode {
     }
 
     public String getFullEngOriginal() {
-        return getLeafs().stream().map(IRNode::getEngOriginal).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
+        return getLeaves().stream().map(IRNode::getEngOriginal).map(StringUtils::emptyIfNull).collect(Collectors.joining(" "));
     }
 
     public String getFullEngInfinitive() {
-        return getLeafs().stream().map(IRNode::getEngInfinitive).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
+        return getLeaves().stream().map(IRNode::getEngInfinitive).map(StringUtils::emptyIfNull).collect(Collectors.joining(" "));
     }
 
     public String getFullRusInfinitive() {
-        return getLeafs().stream().map(IRNode::getRusInfinitive).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
+        return getLeaves().stream().map(IRNode::getRusInfinitive).map(StringUtils::emptyIfNull).collect(Collectors.joining(" "));
     }
 
     public String getFullRusTransformed() {
-        return getLeafs().stream().map(IRNode::getRusTransformed).collect(Collectors.joining(" ")).replaceAll("\\s"," ");
+        return getLeaves().stream().map(IRNode::getRusTransformed).map(StringUtils::emptyIfNull).collect(Collectors.joining(" "));
     }
 
-    public List<IRNode> getLeafs() {
+    public List<IRNode> getLeaves() {
         if (children.isEmpty()) return Collections.singletonList(this);
-        return children.stream().map(IRNode::getLeafs).flatMap(Collection::stream).collect(Collectors.toList());
+        return children.stream().map(IRNode::getLeaves).flatMap(Collection::stream).collect(Collectors.toList());
     }
 
     public boolean applyTransform(IRTransform transform) {
         boolean applied = false;
-        if(transform.performIfPossible(this)) applied = true;
+        if (transform.performIfPossible(this)) applied = true;
         for (IRNode child : children) {
-            if(child.applyTransform(transform)) applied = true;
+            if (child.applyTransform(transform)) applied = true;
         }
-        return true;
+        return applied;
     }
 
-    public List<RussianGrammems> getGrammems() {
+    public Set<RussianGrammems> getGrammems() {
         return grammems;
     }
 
-    public IRNode setGrammems(List<RussianGrammems> grammems) {
-        this.grammems = grammems;
+    public IRNode addGrammems(RussianGrammems... grammems) {
+        switch (grammems.length) {
+            case 0:
+                break;
+            case 1:
+                this.grammems.add(grammems[0]);
+            default:
+                this.grammems.addAll(Arrays.asList(grammems));
+        }
+        return this;
+    }
+
+    public RussianPos getPos() {
+        return pos;
+    }
+
+    public IRNode setPos(RussianPos pos) {
+        this.pos = pos;
+        return this;
+    }
+
+    public IRNode getParent() {
+        return parent;
+    }
+
+    public Set<RussianPos> getPosForDictionary() {
+        return posForDictionary;
+    }
+
+    public IRNode addPosForDictionary(RussianPos... posForDictionary) {
+        if (this.posForDictionary == null) {
+            this.posForDictionary = new HashSet<>();
+        }
+        this.posForDictionary.addAll(Arrays.asList(posForDictionary));
         return this;
     }
 }

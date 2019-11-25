@@ -38018,8 +38018,6 @@ harvest
 убирать урожай	урожай
 harvester
 уборочная	машина
-has
-нет	х)уговаривать
 hash
 обсуждать	мусор	фарш	инф)хэш
 hash addressing
@@ -38101,7 +38099,7 @@ hauteur
 havana
 гавана
 have
-иметь	есть	позволять	х)уговаривать	уже
+иметь
 have company
 иметь гостей
 haven
@@ -38167,7 +38165,7 @@ hdtv
 hdwre
 техн	обесп	
 he
-он	у него	ему
+он
 head
 голова	инф)мех)головка	союз)глава	главный
 head for
@@ -38573,7 +38571,7 @@ heptagon
 heptagonal
 семиугольный
 her
-ее	она	у нее	ей	она
+её	ей	она
 herald
 возвещать	вестник
 herald in
@@ -39015,7 +39013,7 @@ hiroshima
 hirsute
 косматый
 his
-его	он	он
+его
 his like
 ему подобные
 hiss
@@ -44907,7 +44905,7 @@ kicked
 kicking
 бить
 kid
-шутить	ребенок	козленок	лайковый
+шутить	ребенок
 kidder
 шутник
 kidding
@@ -52481,7 +52479,7 @@ muzhik
 muzzle
 морда	намордник	жерло
 my
-мой	я
+мой
 my lord
 милорд (обращение)
 my own
@@ -59089,7 +59087,7 @@ perjuriously
 perjury
 лжесвидетельство
 perk
-оживлять
+оживлять	привилегия
 perk up
 задирать нос
 perkiness
@@ -73597,7 +73595,7 @@ scenic
 scenically
 сценически
 scent
-аромат	запах	духи
+аромат
 scented
 ароматизированный
 scenting
@@ -76669,7 +76667,7 @@ shawnee
 shay
 фаэтон
 she
-она	у нее	ей
+она
 she-wolf
 волчица
 sheaf
@@ -83103,7 +83101,7 @@ stanching
 stanchion
 стойка
 stand
-устанавливать	и)стоять	стенд
+стоять	стенд
 stand against
 [вос]противиться, сопротивляться
 stand aloof
@@ -97335,7 +97333,7 @@ unyoke
 unzip
 расстегивать
 up
-по	вверх
+вверх
 up average
 в среднем
 up operation
@@ -100779,7 +100777,7 @@ wholesales
 wholesaling
 оптовая	торговля
 wholesome
-полезный	здоровый
+полезный
 wholesomely
 полезно
 wholesomeness
@@ -100977,7 +100975,7 @@ wilily
 wiliness
 хитрость
 will
-быть	если	воля(завещание)
+быть	воля
 will-o-the-wisp
 блуждающий огонек
 willful

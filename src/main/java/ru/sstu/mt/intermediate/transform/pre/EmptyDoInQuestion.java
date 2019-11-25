@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class EmptyDoInQuestion extends AbstractTransform {
     public EmptyDoInQuestion() {
-        super(new NodeCriteria().withType("SQ").withInnerNodeCriterias(
+        super(null, new NodeCriteria().withType("SQ").withInnerNodeCriterias(
                 new NodeCriteria().withType("VBP").withEngInfinitive("do").named("do")
         ));
     }

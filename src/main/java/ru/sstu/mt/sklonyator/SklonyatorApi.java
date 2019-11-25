@@ -5,6 +5,7 @@ import ru.sstu.mt.sklonyator.enums.RussianGrammems;
 import ru.sstu.mt.sklonyator.enums.RussianPos;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 public interface SklonyatorApi extends PosDetector {
@@ -20,7 +21,17 @@ public interface SklonyatorApi extends PosDetector {
      * @param grammems Список граммем, описывающих форму
      * @return список вариантов трансформации слова.
      */
-    List<String> transform(String word, List<RussianGrammems> grammems) throws IOException;
+    List<String> transform(String word, Collection<RussianGrammems> grammems) throws IOException;
+
+    /**
+     * Перевод слова к заданным формам
+     *
+     * @param word     Слово в начальной форме, которое нужно привести к другой форме
+     * @param grammems Список граммем, описывающих форму
+     * @param pos      Часть речи слова
+     * @return список вариантов трансформации слова.
+     */
+    List<String> transform(String word, List<RussianGrammems> grammems, RussianPos pos) throws IOException;
 
     /**
      * Получение всех граммем (всей информации о форме слова)
