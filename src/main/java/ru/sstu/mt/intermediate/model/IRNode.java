@@ -3,7 +3,7 @@ package ru.sstu.mt.intermediate.model;
 import opennlp.tools.parser.Parse;
 import opennlp.tools.util.Span;
 import ru.sstu.mt.intermediate.transform.IRTransform;
-import ru.sstu.mt.sklonyator.enums.RussianGrammems;
+import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 import ru.sstu.mt.sklonyator.enums.RussianPos;
 import ru.sstu.mt.util.StringUtils;
 
@@ -16,7 +16,7 @@ public class IRNode {
     private String engInfinitive;
     private String rusInfinitive;
     private String rusTransformed;
-    private Set<RussianGrammems> grammems;
+    private GrammemsHolder grammems;
     /**
      * Возможные части речи для перевода по словарю
      */
@@ -47,7 +47,7 @@ public class IRNode {
         if (start < parse.getSpan().getEnd()) {
             this.engOriginal = parse.getText().substring(start, parse.getSpan().getEnd());
         }
-        grammems = new HashSet<>();
+        grammems = new GrammemsHolder();
     }
 
     public IRNode(String type, String engOriginal) {
@@ -137,18 +137,24 @@ public class IRNode {
         return applied;
     }
 
-    public Set<RussianGrammems> getGrammems() {
+    public GrammemsHolder getGrammems() {
         return grammems;
     }
 
-    public IRNode addGrammems(RussianGrammems... grammems) {
-        switch (grammems.length) {
-            case 0:
-                break;
-            case 1:
-                this.grammems.add(grammems[0]);
-            default:
-                this.grammems.addAll(Arrays.asList(grammems));
+    public Collection<RussianGrammem> getGrammemsCollection() {
+        return grammems.toCollection();
+    }
+
+    public IRNode addGrammems(RussianGrammem... grammems) {
+        for (RussianGrammem grammem : grammems) {
+            this.grammems.add(grammem);
+        }
+        return this;
+    }
+
+    public IRNode addGrammemsIfNone(RussianGrammem... grammems) {
+        for (RussianGrammem grammem : grammems) {
+            this.grammems.addIfNone(grammem);
         }
         return this;
     }

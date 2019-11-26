@@ -9063,7 +9063,7 @@ aweary
 aweigh
 на весу
 awesome
-грозный
+классный	классно
 awesomely
 ужасно
 awesomeness
@@ -12473,7 +12473,7 @@ branching
 branchpoint
 точка ветвления
 brand
-клеймить	марка
+бренд
 brand name
 товарный знак (в патентном праве)	марка	фирменный знак
 branded
@@ -31559,7 +31559,7 @@ exultation
 exxon
 эксон
 eye
-искать	глаз
+глаз	наблюдать
 eye-glass
 линза
 eye-glasses
@@ -37830,6 +37830,8 @@ happiness
 счастье
 happy
 счастливый
+happiest
+счастливейший
 harangue
 кричать	тирада
 harass
@@ -99731,7 +99733,7 @@ wasting
 wastrel
 транжир
 watch
-наблюдать	следить	часы	дозор
+наблюдать	часы
 watch for
 выжидать [выждать]
 watch-dog

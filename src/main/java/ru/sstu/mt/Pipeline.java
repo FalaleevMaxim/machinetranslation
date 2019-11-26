@@ -13,6 +13,8 @@ import ru.sstu.mt.analysis.stanfordnlp.StanfordNlpSource;
 import ru.sstu.mt.dictionary.Dictionary;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.IRTransform;
+import ru.sstu.mt.intermediate.transform.match.MatchAdjectiveToNoun;
+import ru.sstu.mt.intermediate.transform.post.AccusativeForDependentNouns;
 import ru.sstu.mt.intermediate.transform.post.Comparative;
 import ru.sstu.mt.intermediate.transform.post.PluralNNS;
 import ru.sstu.mt.intermediate.transform.post.Superlative;
@@ -31,13 +33,17 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ru.sstu.mt.pipeline.PipelineEvent.*;
 
 public class Pipeline {
     private static final String DEFAULT_DICTIONARY_RESOURCE = "ENRUS.TXT";
-    public static final List<IRTransform> ALL_PRE_TRANSLATE_RULES = Arrays.asList(new EmptyDT(),
+    public static final List<IRTransform> ALL_PRE_TRANSLATE_RULES = Arrays.asList(
+            //Закомментировать SetPos чтобы не использовать склонятор в словаре
+            //new SetPos(),
+            new EmptyDT(),
             new EmptyDoInQuestion(),
             new EmptyDT(),
             new MakeSureThat(),
@@ -47,19 +53,24 @@ public class Pipeline {
             new ByDoing(),
             new OfSmth(),
             new Possessive(),
-            new SetPos(),
             new DidQuestion(),
             new BreatheIn(),
             new ComeIn(),
-            new StandUp()
+            new StandUp(),
+            new PredicateToBe()
     );
     public static final List<IRTransform> ALL_POST_TRANSLATE_RULES = Arrays.asList(
             new Comparative(),
             new Superlative(),
-            new PluralNNS()
+            new PluralNNS(),
+            new AccusativeForDependentNouns()
     );
 
-    private PipelineLogger logger = new PipelineLogger();
+    public static final List<Function<SklonyatorApi, IRTransform>> ALL_MATCHING_RULES = Arrays.asList(
+            MatchAdjectiveToNoun::new
+    );
+
+    private PipelineLogger logger = PipelineLogger.getLogger();
 
     private String sklonyatorApiKey;
     private String dictionaryFilePath;
@@ -71,6 +82,7 @@ public class Pipeline {
     private Parser parser;
     private List<IRTransform> preTranslateRules;
     private List<IRTransform> postTranslateRules;
+    private List<IRTransform> grammemsMatchRules;
 
     private final String sentence;
     private Parse parse;
@@ -82,6 +94,7 @@ public class Pipeline {
     private boolean transformedRussian = false;
     private List<IRTransform> appliedPreTransforms;
     private List<IRTransform> appliedPostTransforms;
+    private List<IRTransform> appliedMatches;
 
     public Pipeline(String sentence) {
         this.sentence = StringUtils.capitalize(sentence);
@@ -193,6 +206,19 @@ public class Pipeline {
     }
 
     /**
+     * Возвращает список правил, которые отрабатывают после перевода инфинитивов на русский
+     */
+    public List<IRTransform> getGrammemsMatchRules() {
+        if (grammemsMatchRules == null) {
+            SklonyatorApi sklonyator = getSklonyator();
+            grammemsMatchRules = ALL_MATCHING_RULES.stream()
+                    .map(f -> f.apply(sklonyator))
+                    .collect(Collectors.toList());
+        }
+        return postTranslateRules;
+    }
+
+    /**
      * Преобразования дерева перед переводом
      *
      * @return Трансформации, которые успешно отработали
@@ -232,7 +258,7 @@ public class Pipeline {
     public SklonyatorApi getSklonyator() {
         if (sklonyator == null) {
             logger.logEvent("Initializing sklonyator api with key = " + sklonyatorApiKey, SKLONYATOR);
-            sklonyator = new SklonyatorApiImpl(sklonyatorApiKey);
+            sklonyator = new SklonyatorApiImpl(sklonyatorApiKey).setLogger(logger);
         }
         return sklonyator;
     }
@@ -285,22 +311,39 @@ public class Pipeline {
         return appliedPostTransforms;
     }
 
+    public List<IRTransform> matchGrammems() throws IOException {
+        if (appliedMatches == null) {
+            postTransformIR();
+            appliedMatches = getGrammemsMatchRules().stream()
+                    .filter(ir::applyTransform)
+                    .collect(Collectors.toList());
+            logger.logResult(
+                    () -> "Applied matches:\n" +
+                            appliedMatches.stream()
+                                    .map(Object::toString)
+                                    .distinct()
+                                    .collect(Collectors.joining("\n")) + "\n",
+                    GRAMMEMS_MATCH);
+        }
+        return appliedMatches;
+    }
+
     /**
      * Склонение/спряжение слов на русском в соответствии с определёнными ранее формами
      */
     public IRNode transformRussian() throws IOException {
         if (!transformedRussian) {
-            postTransformIR();
+            matchGrammems();
             SklonyatorApi sklonyator = getSklonyator();
-            logger.logEvent("Start transforing russian words by grammems", TRANSFORM_RUSSIAN);
+            logger.logEvent("Start transforming russian words by grammems", TRANSFORM_RUSSIAN);
             for (IRNode leaf : ir.getLeaves()) {
                 if (leaf.getRusTransformed() != null) continue;
                 if (leaf.getRusInfinitive().isEmpty()) {
                     leaf.setRusTransformed("");
                     continue;
                 }
-                List<String> transforms = sklonyator.transform(leaf.getRusInfinitive(), leaf.getGrammems());
-                String transformed = null;
+                List<String> transforms = sklonyator.transform(leaf.getRusInfinitive(), leaf.getGrammemsCollection());
+                String transformed;
                 if (transforms.isEmpty()) {
                     transformed = leaf.getRusInfinitive();
                 } else {
@@ -314,6 +357,13 @@ public class Pipeline {
         return ir;
     }
 
+    /**
+     * ToDo ставить формы PRP$ вручную, склонятор в них не умеет.
+     * ToDo Особый случай - будущее время. Вставлять в предложение
+     *
+     * @return
+     * @throws IOException
+     */
     public String getFinalTranslation() throws IOException {
         if (finalTranslation == null) {
             finalTranslation = transformRussian().getLeaves().stream().map(IRNode::getRusTransformed).collect(Collectors.joining(" "));
@@ -386,22 +436,4 @@ public class Pipeline {
     public PipelineLogger getLogger() {
         return logger;
     }
-
-    /*public enum State {
-        START("Начало"),
-        PARSED("Выполнен парсинг английского предложения"),
-        TO_IR("Получено внутреннее представление"),
-        INFINITIVES("Получены начальные формы для каждого слова в предложении"),
-        PRE_TRANSFORMED("Произведены преобразования внутреннего представления перед переводом"),
-        TRANSLATE("Слова в начальных формах переведены на русский"),
-        POST_TRANSFORM("Произведены преобразования внутреннего представления перед согласованием грамматических форм"),
-        FORMS_MATCHED("Формы слов в русском языке согласованы"),
-        FINISHED("Получен окончательный перевод предложения на русский язык");
-
-        private final String description;
-
-        State(String description) {
-            this.description = description;
-        }
-    }*/
 }

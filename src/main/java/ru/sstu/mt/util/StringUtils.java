@@ -1,6 +1,9 @@
 package ru.sstu.mt.util;
 
 public class StringUtils {
+    public static boolean isNullOrEmpty(String s) {
+        return s == null || s.isEmpty();
+    }
 
     public static String emptyIfNull(String s) {
         return s == null ? "" : s;

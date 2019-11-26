@@ -6,13 +6,29 @@ import java.util.function.Supplier;
 import static ru.sstu.mt.pipeline.LoggingMode.*;
 
 public class PipelineLogger {
+    public static final PipelineLogger DEFAULT_LOGGER = getWithModeForAll(BOTH);
+
+    public static PipelineLogger getLogger() {
+        return new PipelineLogger(DEFAULT_LOGGER);
+    }
+
+    public static PipelineLogger getWithModeForAll(LoggingMode mode) {
+        PipelineLogger logger = new PipelineLogger();
+        for (PipelineEvent event : PipelineEvent.values()) {
+            logger.loggableEvents.put(event, mode);
+        }
+        return logger;
+    }
+
     private final EnumMap<PipelineEvent, LoggingMode> loggableEvents;
 
-    public PipelineLogger() {
+    private PipelineLogger() {
         loggableEvents = new EnumMap<>(PipelineEvent.class);
-        for (PipelineEvent event : PipelineEvent.values()) {
-            loggableEvents.put(event, BOTH);
-        }
+
+    }
+
+    private PipelineLogger(PipelineLogger other) {
+        loggableEvents = new EnumMap<>(other.loggableEvents);
     }
 
     public PipelineLogger setLogMode(LoggingMode mode, PipelineEvent... events) {

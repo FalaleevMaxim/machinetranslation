@@ -2,7 +2,8 @@ package ru.sstu.mt.sklonyator;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ru.sstu.mt.sklonyator.enums.RussianGrammems;
+import ru.sstu.mt.pipeline.PipelineLogger;
+import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 import ru.sstu.mt.sklonyator.enums.RussianPos;
 
 import java.io.IOException;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static ru.sstu.mt.pipeline.PipelineEvent.SKLONYATOR;
 
 public class SklonyatorApiImpl implements SklonyatorApi {
     private static final String DEFAULT_API_KEY = "38d6bd9795f4573b3a8556e0f9598b8a";
@@ -28,6 +31,8 @@ public class SklonyatorApiImpl implements SklonyatorApi {
     private final String grammemsUrl;
     private final String formatUrl;
     private final String formatWithPosUrl;
+
+    private PipelineLogger logger = PipelineLogger.getLogger();
 
     private int limit = -1;
 
@@ -49,28 +54,50 @@ public class SklonyatorApiImpl implements SklonyatorApi {
 
     @Override
     public List<RussianPos> getPos(String word) throws IOException {
-        return requestList(String.format(posUrl, word), RussianPos::getBySystemName);
+        List<RussianPos> posList = requestList(String.format(posUrl, word), RussianPos::getBySystemName);
+        if (posList.isEmpty()) {
+            logger.logResult(() -> String.format("No parts of speech found for word \"%s\"", word), SKLONYATOR);
+        } else if (posList.size() > 1) {
+            logger.logResult(() -> String.format("Multiple parts of speech found for word \"%s\":\n%s", word, posList), SKLONYATOR);
+        }
+        return posList;
     }
 
     @Override
-    public List<RussianGrammems> getGrammems(String word) throws IOException {
-        return requestList(String.format(grammemsUrl, word), RussianGrammems::getBySystemName);
+    public List<RussianGrammem> getGrammems(String word) throws IOException {
+        List<RussianGrammem> grammems = requestList(String.format(grammemsUrl, word), RussianGrammem::getBySystemName);
+        if (grammems.isEmpty()) {
+            logger.logResult(String.format("No grammems found for word %s", word), SKLONYATOR);
+        }
+        return grammems;
     }
 
     @Override
-    public List<String> transform(String word, Collection<RussianGrammems> grammems) throws IOException {
+    public List<String> transform(String word, Collection<RussianGrammem> grammems) throws IOException {
         String grammemsStr = grammems.stream()
-                .map(RussianGrammems::getSystemName)
+                .map(RussianGrammem::getSystemName)
                 .collect(Collectors.joining(","));
-        return requestList(String.format(formatUrl, word, grammemsStr), x -> x);
+        List<String> transforms = requestList(String.format(formatUrl, word, grammemsStr), x -> x);
+        if (transforms.isEmpty()) {
+            logger.logResult(() -> String.format("No options found for word \"%s\" and grammems %s", word, grammems), SKLONYATOR);
+        } else if (transforms.size() > 1) {
+            logger.logResult(() -> String.format("Multiple options found for word \"%s\" and grammems %s:\n%s", word, grammems, transforms), SKLONYATOR);
+        }
+        return transforms;
     }
 
     @Override
-    public List<String> transform(String word, List<RussianGrammems> grammems, RussianPos pos) throws IOException {
+    public List<String> transform(String word, List<RussianGrammem> grammems, RussianPos pos) throws IOException {
         String grammemsStr = grammems.stream()
-                .map(RussianGrammems::getSystemName)
+                .map(RussianGrammem::getSystemName)
                 .collect(Collectors.joining(","));
-        return requestList(String.format(formatWithPosUrl, word, grammemsStr, pos.systemName), x -> x);
+        List<String> transforms = requestList(String.format(formatWithPosUrl, word, grammemsStr, pos.systemName), x -> x);
+        if (transforms.isEmpty()) {
+            logger.logResult(() -> String.format("No options found for word \"%s\", part of speech %s and grammems %s", word, pos.description, grammems), SKLONYATOR);
+        } else if (transforms.size() > 1) {
+            logger.logResult(() -> String.format("Multiple options found for word \"%s\", part of speech %s and grammems %s:\n%s", word, pos.description, grammems, transforms), SKLONYATOR);
+        }
+        return transforms;
     }
 
     private <T> List<T> requestList(String url, Function<String, T> mapping) throws IOException {
@@ -80,7 +107,10 @@ public class SklonyatorApiImpl implements SklonyatorApi {
         for (int i = 0; ; i++) {
             JsonNode n = node.get(Integer.toString(i));
             if (n == null) break;
-            results.add(mapping.apply(n.asText()));
+            T mapped = mapping.apply(n.asText());
+            if (mapped != null) {
+                results.add(mapped);
+            }
         }
         setLimit(node);
         return results;
@@ -106,5 +136,10 @@ public class SklonyatorApiImpl implements SklonyatorApi {
 
     private void setLimit(JsonNode response) {
         this.limit = response.get(LIMIT).asInt();
+    }
+
+    public SklonyatorApiImpl setLogger(PipelineLogger logger) {
+        this.logger = logger;
+        return this;
     }
 }
