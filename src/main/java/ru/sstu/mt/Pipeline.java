@@ -13,14 +13,20 @@ import ru.sstu.mt.analysis.stanfordnlp.StanfordNlpSource;
 import ru.sstu.mt.dictionary.Dictionary;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.IRTransform;
-import ru.sstu.mt.intermediate.transform.post.Comparative;
-import ru.sstu.mt.intermediate.transform.post.PluralNNS;
-import ru.sstu.mt.intermediate.transform.post.Superlative;
+import ru.sstu.mt.intermediate.transform.match.MatchAdjectiveToNoun;
+import ru.sstu.mt.intermediate.transform.match.MatchVerbToNoun;
+import ru.sstu.mt.intermediate.transform.post.*;
 import ru.sstu.mt.intermediate.transform.pre.*;
-import ru.sstu.mt.intermediate.transform.pre.phrases.*;
+import ru.sstu.mt.intermediate.transform.pre.phrases.MakeSureThat;
+import ru.sstu.mt.intermediate.transform.pre.phrases.MakeSureTo;
+import ru.sstu.mt.intermediate.transform.pre.phrases.StandUp;
+import ru.sstu.mt.intermediate.transform.pre.phrases.verbs.BreatheIn;
+import ru.sstu.mt.intermediate.transform.pre.phrases.verbs.ComeIn;
+import ru.sstu.mt.intermediate.transform.pre.phrases.verbs.LookAt;
 import ru.sstu.mt.pipeline.PipelineLogger;
 import ru.sstu.mt.sklonyator.SklonyatorApi;
 import ru.sstu.mt.sklonyator.SklonyatorApiImpl;
+import ru.sstu.mt.sklonyator.WordFormInfo;
 import ru.sstu.mt.util.NameTransliteration;
 import ru.sstu.mt.util.ParsePrettyPrinter;
 import ru.sstu.mt.util.StringUtils;
@@ -31,13 +37,17 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ru.sstu.mt.pipeline.PipelineEvent.*;
 
 public class Pipeline {
     private static final String DEFAULT_DICTIONARY_RESOURCE = "ENRUS.TXT";
-    public static final List<IRTransform> ALL_PRE_TRANSLATE_RULES = Arrays.asList(new EmptyDT(),
+    public static final List<IRTransform> ALL_PRE_TRANSLATE_RULES = Arrays.asList(
+            //Закомментировать SetPos чтобы не использовать склонятор в словаре
+            new SetPos(),
+            new EmptyDT(),
             new EmptyDoInQuestion(),
             new EmptyDT(),
             new MakeSureThat(),
@@ -47,19 +57,32 @@ public class Pipeline {
             new ByDoing(),
             new OfSmth(),
             new Possessive(),
-            new SetPos(),
             new DidQuestion(),
             new BreatheIn(),
             new ComeIn(),
-            new StandUp()
+            new StandUp(),
+            new PredicateToBe(),
+            new DoNot(),
+            new LookAt()
     );
     public static final List<IRTransform> ALL_POST_TRANSLATE_RULES = Arrays.asList(
             new Comparative(),
             new Superlative(),
-            new PluralNNS()
+            new PluralNNS(),
+            new AccusativeForDependentNouns(),
+            new AccusativeForPP(),
+            new SeemAdjectiveInstrumental(),
+            new ImperativeS(),
+            new ImperativeTOP(),
+            new ThanNominative()
     );
 
-    private PipelineLogger logger = new PipelineLogger();
+    public static final List<Function<SklonyatorApi, IRTransform>> ALL_MATCHING_RULES = Arrays.asList(
+            MatchAdjectiveToNoun::new,
+            MatchVerbToNoun::new
+    );
+
+    private PipelineLogger logger = PipelineLogger.getLogger();
 
     private String sklonyatorApiKey;
     private String dictionaryFilePath;
@@ -71,6 +94,7 @@ public class Pipeline {
     private Parser parser;
     private List<IRTransform> preTranslateRules;
     private List<IRTransform> postTranslateRules;
+    private List<IRTransform> grammemsMatchRules;
 
     private final String sentence;
     private Parse parse;
@@ -82,6 +106,7 @@ public class Pipeline {
     private boolean transformedRussian = false;
     private List<IRTransform> appliedPreTransforms;
     private List<IRTransform> appliedPostTransforms;
+    private List<IRTransform> appliedMatches;
 
     public Pipeline(String sentence) {
         this.sentence = StringUtils.capitalize(sentence);
@@ -164,6 +189,9 @@ public class Pipeline {
                                     node.getEngOriginal(), token.originalText()));
                 }
                 node.setEngInfinitive(token.lemma());
+                if (node.getEngInfinitive() == null) {
+                    node.setEngInfinitive("");
+                }
             }
             infinitivesSet = true;
             logger.logResult(() -> "Infinitives:\n" + ir.getFullEngInfinitive() + "\n", INFINITIVES);
@@ -190,6 +218,19 @@ public class Pipeline {
             postTranslateRules = ALL_POST_TRANSLATE_RULES;
         }
         return postTranslateRules;
+    }
+
+    /**
+     * Возвращает список правил, которые отрабатывают после перевода инфинитивов на русский
+     */
+    public List<IRTransform> getGrammemsMatchRules() {
+        if (grammemsMatchRules == null) {
+            SklonyatorApi sklonyator = getSklonyator();
+            grammemsMatchRules = ALL_MATCHING_RULES.stream()
+                    .map(f -> f.apply(sklonyator))
+                    .collect(Collectors.toList());
+        }
+        return grammemsMatchRules;
     }
 
     /**
@@ -232,7 +273,7 @@ public class Pipeline {
     public SklonyatorApi getSklonyator() {
         if (sklonyator == null) {
             logger.logEvent("Initializing sklonyator api with key = " + sklonyatorApiKey, SKLONYATOR);
-            sklonyator = new SklonyatorApiImpl(sklonyatorApiKey);
+            sklonyator = new SklonyatorApiImpl(sklonyatorApiKey).setLogger(logger);
         }
         return sklonyator;
     }
@@ -246,7 +287,7 @@ public class Pipeline {
             Dictionary dictionary = getDictionary();
             logger.logEvent("Translating infinitives", TRANSLATE);
             for (IRNode leaf : ir.getLeaves()) {
-                if (leaf.getEngInfinitive() == null) continue;
+                if (leaf.getEngInfinitive().isEmpty()) continue;
                 if (leaf.getRusInfinitive() != null) continue;
                 if (leaf.getType().equals("NNP")) {
                     leaf.setRusInfinitive(NameTransliteration.translit(leaf.getEngInfinitive()));
@@ -255,6 +296,29 @@ public class Pipeline {
                             dictionary.getTranslation(
                                     leaf.getEngInfinitive(),
                                     leaf.getPosForDictionary()));
+                }
+                if (leaf.getRusInfinitive() == null) {
+                    if (leaf.getType().equals("JJR") || leaf.getType().equals("RBR") || leaf.getEngInfinitive().endsWith("er")) {
+                        leaf.setRusInfinitive(
+                                dictionary.getTranslation(
+                                        leaf.getEngInfinitive().substring(0, leaf.getEngInfinitive().length() - 2),
+                                        leaf.getPosForDictionary()));
+                    }
+                    if (leaf.getType().equals("JJS") || leaf.getType().equals("RBS") || leaf.getEngInfinitive().endsWith("st")) {
+                        leaf.setRusInfinitive(
+                                dictionary.getTranslation(
+                                        leaf.getEngInfinitive().substring(0, leaf.getEngInfinitive().length() - 2),
+                                        leaf.getPosForDictionary()));
+                        if (leaf.getRusInfinitive() == null && leaf.getEngInfinitive().endsWith("est")) {
+                            leaf.setRusInfinitive(
+                                    dictionary.getTranslation(
+                                            leaf.getEngInfinitive().substring(0, leaf.getEngInfinitive().length() - 3),
+                                            leaf.getPosForDictionary()));
+                        }
+                    }
+                    if (leaf.getRusInfinitive() == null) {
+                        leaf.setRusInfinitive("");
+                    }
                 }
             }
             translated = true;
@@ -285,28 +349,98 @@ public class Pipeline {
         return appliedPostTransforms;
     }
 
+    public List<IRTransform> matchGrammems() throws IOException {
+        if (appliedMatches == null) {
+            postTransformIR();
+            appliedMatches = getGrammemsMatchRules().stream()
+                    .filter(ir::applyTransform)
+                    .collect(Collectors.toList());
+            logger.logResult(
+                    () -> "Applied matches:\n" +
+                            appliedMatches.stream()
+                                    .map(Object::toString)
+                                    .distinct()
+                                    .collect(Collectors.joining("\n")) + "\n",
+                    GRAMMEMS_MATCH);
+        }
+        return appliedMatches;
+    }
+
     /**
      * Склонение/спряжение слов на русском в соответствии с определёнными ранее формами
+     * <p>
+     * ToDo ставить формы PRP$ вручную, склонятор в них не умеет.
+     * ToDo Особый случай - будущее время. Вставлять в предложение
      */
     public IRNode transformRussian() throws IOException {
         if (!transformedRussian) {
-            postTransformIR();
+            matchGrammems();
             SklonyatorApi sklonyator = getSklonyator();
-            logger.logEvent("Start transforing russian words by grammems", TRANSFORM_RUSSIAN);
+            logger.logEvent("Start transforming russian words by grammems", TRANSFORM_RUSSIAN);
             for (IRNode leaf : ir.getLeaves()) {
-                if (leaf.getRusTransformed() != null) continue;
                 if (leaf.getRusInfinitive().isEmpty()) {
                     leaf.setRusTransformed("");
+                }
+                if (leaf.getGrammemsCollection().isEmpty()) {
+                    leaf.setRusTransformed(leaf.getRusInfinitive());
+                }
+                if (leaf.getRusTransformed() != null) {
                     continue;
                 }
-                List<String> transforms = sklonyator.transform(leaf.getRusInfinitive(), leaf.getGrammems());
+
+                List<WordFormInfo> transforms = sklonyator.transformWithInfo(leaf.getRusInfinitive(), leaf.getGrammemsCollection());
                 String transformed = null;
                 if (transforms.isEmpty()) {
+                    logger.logEvent(String.format("Could not transform \"%s\" to form %s", leaf.getRusInfinitive(), leaf.getGrammemsCollection().toString()), TRANSFORM_RUSSIAN);
                     transformed = leaf.getRusInfinitive();
+                } else if (transforms.size() == 1) {
+                    transformed = transforms.get(0).getWord();
                 } else {
-                    transformed = transforms.get(0);
+                    List<WordFormInfo> byRecommended = transforms.stream()
+                            .filter(fi -> fi.getPos() == leaf.getPos())
+                            .collect(Collectors.toList());
+                    if (!byRecommended.isEmpty()) {
+                        transformed = byRecommended.get(0).getWord();
+                        if (byRecommended.size() > 1) {
+                            logger.logEvent(String.format(
+                                    "Multiple options to transform \"%s\" to form %s with recommended part of speech %s:\n%s\nSelected: %s\n",
+                                    leaf.getRusInfinitive(),
+                                    leaf.getGrammemsCollection().toString(),
+                                    leaf.getPos().description,
+                                    byRecommended.stream().map(fi -> fi.getWord() + ":" + fi.getPos().systemName).collect(Collectors.joining(";")),
+                                    transformed
+                            ), TRANSFORM_RUSSIAN);
+                        }
+                    } else {
+                        List<WordFormInfo> byPossible = transforms.stream()
+                                .filter(fi -> leaf.getPosForDictionary().contains(fi.getPos()))
+                                .collect(Collectors.toList());
+                        if (!byPossible.isEmpty()) {
+                            transformed = byPossible.get(0).getWord();
+                            if (byPossible.size() > 1) {
+                                logger.logEvent(String.format(
+                                        "Multiple options to transform \"%s\" to form %s with possible parts of speech %s:\n%s\nSelected: %s\n",
+                                        leaf.getRusInfinitive(),
+                                        leaf.getGrammemsCollection().toString(),
+                                        leaf.getPosForDictionary().stream().map(pos -> pos.systemName).collect(Collectors.joining(";")),
+                                        byPossible.stream().map(fi -> fi.getWord() + ":" + fi.getPos().systemName).collect(Collectors.joining(";")),
+                                        transformed
+                                ), TRANSFORM_RUSSIAN);
+                            }
+                        } else {
+                            transformed = transforms.get(0).getWord();
+                            logger.logEvent(String.format(
+                                    "Could not transform \"%s\" to form %s with possible parts of speech: %s.\nOptions are: %s.\nSelected first option: %s\n",
+                                    leaf.getRusInfinitive(),
+                                    leaf.getGrammemsCollection().toString(),
+                                    leaf.getPosForDictionary().stream().map(pos -> pos.systemName).collect(Collectors.joining(";")),
+                                    transforms.stream().map(fi -> fi.getWord() + ":" + fi.getPos().systemName).collect(Collectors.joining(";")),
+                                    transformed
+                            ), TRANSFORM_RUSSIAN);
+                        }
+                    }
                 }
-                leaf.setRusTransformed(transformed);
+                leaf.setRusTransformed(transformed.toLowerCase());
             }
             transformedRussian = true;
             logger.logResult(() -> "Russian transformed:\n" + ir.getFullRusTransformed() + "\n", TRANSFORM_RUSSIAN);
@@ -316,7 +450,7 @@ public class Pipeline {
 
     public String getFinalTranslation() throws IOException {
         if (finalTranslation == null) {
-            finalTranslation = transformRussian().getLeaves().stream().map(IRNode::getRusTransformed).collect(Collectors.joining(" "));
+            finalTranslation = StringUtils.capitalize(transformRussian().getFullRusTransformed().trim());
             logger.logResult("Final translation:\n" + finalTranslation + "\n", FINISHED);
         }
         return finalTranslation;
@@ -386,22 +520,4 @@ public class Pipeline {
     public PipelineLogger getLogger() {
         return logger;
     }
-
-    /*public enum State {
-        START("Начало"),
-        PARSED("Выполнен парсинг английского предложения"),
-        TO_IR("Получено внутреннее представление"),
-        INFINITIVES("Получены начальные формы для каждого слова в предложении"),
-        PRE_TRANSFORMED("Произведены преобразования внутреннего представления перед переводом"),
-        TRANSLATE("Слова в начальных формах переведены на русский"),
-        POST_TRANSFORM("Произведены преобразования внутреннего представления перед согласованием грамматических форм"),
-        FORMS_MATCHED("Формы слов в русском языке согласованы"),
-        FINISHED("Получен окончательный перевод предложения на русский язык");
-
-        private final String description;
-
-        State(String description) {
-            this.description = description;
-        }
-    }*/
 }

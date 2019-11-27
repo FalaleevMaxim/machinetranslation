@@ -8,7 +8,7 @@ public enum PipelineEvent {
     PRE_TRANSFORM,
     TRANSLATE,
     POST_TRANSFORM,
-    FORMS_MATCHED,
+    GRAMMEMS_MATCH,
     TRANSFORM_RUSSIAN,
     FINISHED,
     DICTIONARY,

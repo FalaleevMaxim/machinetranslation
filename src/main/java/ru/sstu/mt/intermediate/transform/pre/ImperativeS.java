@@ -7,15 +7,12 @@ import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 
 import java.util.Map;
 
-public class DidQuestion extends AbstractTransform {
-    public DidQuestion() {
+public class ImperativeS extends AbstractTransform {
+    public ImperativeS() {
         super(null, new NodeCriteria()
-                .withType("SQ")
+                .withType("S")
+                .withOtherConditions((node, vars) -> node.getChildren().stream().noneMatch(ch -> ch.getType().equals("NP")))
                 .withInnerNodeCriterias(
-                        new NodeCriteria()
-                                .withType("VBD")
-                                .withEngOriginal("did")
-                                .named("did"),
                         new NodeCriteria()
                                 .withType("VP")
                                 .withInnerNodeCriterias(
@@ -26,7 +23,7 @@ public class DidQuestion extends AbstractTransform {
 
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
-        queryResults.get("did").doNotTranslate();
-        queryResults.get("verb").addGrammems(RussianGrammem.PAST);
+        queryResults.get("verb").addGrammems(RussianGrammem.IMPERATIVE);
+        queryResults.get("verb").addGrammems(RussianGrammem.PLURAL);
     }
 }

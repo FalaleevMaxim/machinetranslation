@@ -89,7 +89,7 @@ public class NodeCriteria {
     }
 
     private Map<String, IRNode> checkFollowing (List<IRNode> children, int index, NodeCriteria followingCriteria) {
-        if (index == children.size()) return null;
+        if (index == children.size() - 1) return null;
         return followingCriteria.query(children.get(index+1));
     }
 

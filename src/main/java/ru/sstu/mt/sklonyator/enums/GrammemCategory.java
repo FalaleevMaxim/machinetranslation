@@ -3,7 +3,7 @@ package ru.sstu.mt.sklonyator.enums;
 public enum GrammemCategory {
     GENDER("род"),
     PERSON("лицо"),
-    NUMBER("число"),
+    QUANTITY("число"),
     CASE("падеж"),
     TENSE("время"),
     TYPE("вид"),

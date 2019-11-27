@@ -6,15 +6,18 @@ import opennlp.tools.parser.ParserModel;
 import ru.sstu.mt.dictionary.Dictionary;
 import ru.sstu.mt.pipeline.LoggingMode;
 import ru.sstu.mt.pipeline.PipelineEvent;
-import ru.sstu.mt.pipeline.PipelineLogger;
 import ru.sstu.mt.sklonyator.SklonyatorApi;
 
 import java.io.IOException;
 import java.util.Scanner;
 
+import static ru.sstu.mt.pipeline.PipelineLogger.DEFAULT_LOGGER;
+
 public class Main {
 
     public static void main(String[] args) throws IOException {
+        setDefaultLoggerParams();
+
         ParserModel parserModel = null;
         Parser parser = null;
         Dictionary dictionary = null;
@@ -30,7 +33,7 @@ public class Main {
                     .setStanfordNLP(stanfordNLP)
                     .setSklonyator(sklonyator);
             setPipelineParams(pipeline);
-            pipeline.translateIR();
+            pipeline.getFinalTranslation();
 
             if (parser == null) parser = pipeline.getParser();
             if (dictionary == null) dictionary = pipeline.getDictionary();
@@ -47,13 +50,15 @@ public class Main {
         String dictionaryFilePath = System.getProperty("dictionaryFilePath");
         if (sklonyatorApiKey != null) pipeline.setSklonyatorApiKey(sklonyatorApiKey);
         if (dictionaryFilePath != null) pipeline.setDictionaryFilePath(dictionaryFilePath);
-        PipelineLogger logger = pipeline.getLogger();
+    }
+
+    private static void setDefaultLoggerParams() {
         for (PipelineEvent event : PipelineEvent.values()) {
             String property = System.getProperty("log_" + event.name());
             if (property == null) continue;
             try {
                 LoggingMode loggingMode = LoggingMode.valueOf(property);
-                logger.setLogMode(loggingMode, event);
+                DEFAULT_LOGGER.setLogMode(loggingMode, event);
             } catch (IllegalArgumentException ignored) {
             }
         }

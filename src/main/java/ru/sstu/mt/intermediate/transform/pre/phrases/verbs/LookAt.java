@@ -1,4 +1,4 @@
-package ru.sstu.mt.intermediate.transform.pre.phrases;
+package ru.sstu.mt.intermediate.transform.pre.phrases.verbs;
 
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
@@ -6,27 +6,27 @@ import ru.sstu.mt.intermediate.transform.NodeCriteria;
 
 import java.util.Map;
 
-public class ComeIn extends AbstractTransform {
-    public ComeIn() {
+public class LookAt extends AbstractTransform {
+    public LookAt() {
         super(null, new NodeCriteria()
                 .withType("VP")
                 .withInnerNodeCriterias(
                         new NodeCriteria()
-                                .withType("VBP", "VB", "VBZ")
-                                .withEngInfinitive("come")
-                                .named("come"),
+                                .withType("VB", "VBD", "VBZ")
+                                .withEngInfinitive("look")
+                                .named("look"),
                         new NodeCriteria()
-                                .withType("ADVP")
+                                .withType("PP")
                                 .withInnerNodeCriterias(
                                         new NodeCriteria()
                                                 .withType("IN")
-                                                .withEngInfinitive("in")
-                                                .named("in"))));
+                                                .withEngInfinitive("at")
+                                                .named("at"))));
     }
 
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
-        queryResults.get("come").setRusInfinitive("входить");
-        queryResults.get("in").doNotTranslate();
+        queryResults.get("at").setRusInfinitive("на");
+        queryResults.get("look").setRusInfinitive("смотреть");
     }
 }

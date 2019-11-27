@@ -3,7 +3,7 @@ package ru.sstu.mt.intermediate.transform.pre;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
 import ru.sstu.mt.intermediate.transform.NodeCriteria;
-import ru.sstu.mt.sklonyator.enums.RussianGrammems;
+import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 
 import java.util.Map;
 
@@ -34,7 +34,7 @@ public class OfSmth extends AbstractTransform {
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
         queryResults.get("of").doNotTranslate();
-        queryResults.get("smth").addGrammems(RussianGrammems.GENITIVE);
+        queryResults.get("smth").addGrammems(RussianGrammem.GENITIVE);
 
     }
 }

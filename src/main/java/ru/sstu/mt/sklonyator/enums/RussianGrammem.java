@@ -6,13 +6,13 @@ import java.util.stream.Collectors;
 
 import static ru.sstu.mt.sklonyator.enums.GrammemCategory.*;
 
-public enum RussianGrammems {
+public enum RussianGrammem {
     MASCULINE(GENDER, "мр", "мужской род"),
     FEMININE(GENDER, "жр", "женский род"),
     MID(GENDER, "ср", "средний род"),
     COMMON(GENDER, "мр-жр", "общий род (сирота, пьяница)"),
-    SINGULAR(NUMBER, "ед", "единственное число"),
-    PLURAL(NUMBER, "мн", "множественное число"),
+    SINGULAR(QUANTITY, "ед", "единственное число"),
+    PLURAL(QUANTITY, "мн", "множественное число"),
     NOMINATIVE(CASE, "им", "именительный"),
     GENITIVE(CASE, "рд", "родительный"),
     DATIVE(CASE, "дт", "дательный"),
@@ -21,12 +21,13 @@ public enum RussianGrammems {
     PREPOSITIONAL(CASE, "пр", "предложный"),
     FIRST_PERSON(PERSON, "1л", "первое лицо"),
     SECOND_PERSON(PERSON, "2л", "второе лицо"),
-    THIRDPERSON(PERSON, "3л", "третье лицо"),
+    THIRD_PERSON(PERSON, "3л", "третье лицо"),
     PAST(TENSE, "прш", "прошедшее время"),
     PRESENT(TENSE, "нст", "настоящее время"),
     FUTURE(TENSE, "буд", "будущее время"),
     PERFECT(TYPE, "св", "совершенный вид"),
     IMPERFECTIVE(TYPE, "нс", "несовершенный вид"),
+    IMPERATIVE(DEGREE, "пвл", "повелительное наклонение"),
     SUPERLATIVE(DEGREE, "прев", "превосходная степень"),
     COMPARATIVE(DEGREE, "сравн", "сравнительная  степень"),
     QUALITY(DEGREE, "кач", "качественное прилагательное");
@@ -37,7 +38,7 @@ public enum RussianGrammems {
     public final String description;
 
 
-    RussianGrammems(GrammemCategory category, String systemName, String description) {
+    RussianGrammem(GrammemCategory category, String systemName, String description) {
         this.category = category;
         this.systemName = systemName;
         this.description = description;
@@ -55,19 +56,19 @@ public enum RussianGrammems {
         return description;
     }
 
-    public static RussianGrammems getBySystemName(String systemName) {
+    public static RussianGrammem getBySystemName(String systemName) {
         return Arrays.stream(values())
                 .filter(grammem -> grammem.systemName.equals(systemName.toLowerCase()))
                 .findFirst().orElse(null);
     }
 
-    public static RussianGrammems getByDescription(String description) {
+    public static RussianGrammem getByDescription(String description) {
         return Arrays.stream(values())
                 .filter(grammem -> grammem.description.equals(description.toLowerCase()))
                 .findFirst().orElse(null);
     }
 
-    public static List<RussianGrammems> getOfCategory(GrammemCategory category) {
+    public static List<RussianGrammem> getOfCategory(GrammemCategory category) {
         return Arrays.stream(values())
                 .filter(grammem -> grammem.category.equals(category))
                 .collect(Collectors.toList());
