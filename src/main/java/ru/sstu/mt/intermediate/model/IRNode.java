@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class IRNode {
-    private final String type;
+    private String type;
     private String engOriginal;
     private String engInfinitive;
     private String rusInfinitive;
@@ -25,6 +25,10 @@ public class IRNode {
      * Часть речи для склонения
      */
     private RussianPos pos;
+    /**
+     * Служит для добавления слов "более" или "самый" для сравнительных или превосходных степеней прилагательных, не имеющих перевода в 1 слово.
+     */
+    private String rusTransformedPrefix;
 
     private List<IRNode> children = new ArrayList<>();
     private IRNode parent;
@@ -59,6 +63,10 @@ public class IRNode {
         return type;
     }
 
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public String getEngOriginal() {
         return engOriginal;
     }
@@ -80,7 +88,8 @@ public class IRNode {
     }
 
     public String getRusTransformed() {
-        return rusTransformed;
+        if (rusTransformedPrefix == null) return rusTransformed;
+        return rusTransformedPrefix + " " + rusTransformed;
     }
 
     public void setRusTransformed(String rusTransformed) {
@@ -104,7 +113,7 @@ public class IRNode {
 
     @Override
     public String toString() {
-        return ("(" + type + ' ' + (engOriginal != null ? engOriginal : "") + (children.size() != 0 ? children.toString() : "") + ')').replaceAll("[\\[\\],]|\\(\\)", "");
+        return ("(" + type + ' ' + (engOriginal != null ? engOriginal : "") + (children.size() != 0 ? children.toString() : "") + ')').replaceAll("[\\[\\]]|\\(\\)", "");
     }
 
     public String getFullEngOriginal() {
@@ -182,5 +191,13 @@ public class IRNode {
         }
         this.posForDictionary.addAll(Arrays.asList(posForDictionary));
         return this;
+    }
+
+    public String getRusTransformedPrefix() {
+        return rusTransformedPrefix;
+    }
+
+    public void setRusTransformedPrefix(String rusTransformedPrefix) {
+        this.rusTransformedPrefix = rusTransformedPrefix;
     }
 }

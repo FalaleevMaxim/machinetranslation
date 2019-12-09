@@ -7,7 +7,8 @@ public enum GrammemCategory {
     CASE("падеж"),
     TENSE("время"),
     TYPE("вид"),
-    DEGREE("степень");
+    DEGREE("степень"),
+    VOICE("залог");
 
     public final String name;
 

@@ -351,7 +351,7 @@ abortiveness
 abound
 изобиловать
 about
-около	почти	вновь
+о
 above
 пвыше	вышеуказанное
 above all
@@ -10195,7 +10195,7 @@ bazaar
 bazooka
 гранатомет
 be
-быть	нужно	будь
+быть
 be able
 мочь, быть в состоянии
 be about
@@ -17465,7 +17465,7 @@ combustibles
 combustion
 горение
 come
-приходить	б)начинать
+прийти
 come about
 случаться [-читься], происходить [произойти]
 come to
@@ -22009,7 +22009,7 @@ cutaway view
 cutback
 снижение
 cute
-находчивый
+милый
 cutlass
 тесак
 cutlery
@@ -37811,7 +37811,7 @@ hanoi
 haphazard
 случайность
 happen
-случаться
+случиться
 happen on
 случайно встретить
 happen upon
@@ -63531,7 +63531,7 @@ prettily
 prettiness
 миловидность
 pretty
-изрядно	красивый
+красивый
 pretzel
 крендель
 prev
@@ -89635,7 +89635,7 @@ telex server
 telexed
 посылать телексом
 tell
-сообщать
+рассказать
 teller
 кассир
 telling
@@ -90263,7 +90263,7 @@ thanks to
 thanksgiving
 благодарение	благодарственный
 that
-, что	й), чтобы	это	и)то	этот	, что	, который	это
+что
 thatch
 крыть соломой	солома
 thaw
@@ -101345,7 +101345,7 @@ witchhunt
 witchy
 колдовской
 with
-с	с помощью
+с
 with child
 беременная
 with impunity

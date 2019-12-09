@@ -3,9 +3,10 @@ package ru.sstu.mt.intermediate.transform.post;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
 import ru.sstu.mt.intermediate.transform.NodeCriteria;
-import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 
 import java.util.Map;
+
+import static ru.sstu.mt.sklonyator.enums.RussianGrammem.*;
 
 public class ImperativeTOP extends AbstractTransform {
     public ImperativeTOP() {
@@ -22,7 +23,6 @@ public class ImperativeTOP extends AbstractTransform {
 
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
-        queryResults.get("verb").addGrammems(RussianGrammem.IMPERATIVE);
-        queryResults.get("verb").addGrammems(RussianGrammem.PLURAL);
+        queryResults.get("verb").addGrammems(IMPERATIVE, PLURAL, SECOND_PERSON);
     }
 }

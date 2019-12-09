@@ -1,4 +1,4 @@
-package ru.sstu.mt.intermediate.transform.pre.phrases.verbs;
+package ru.sstu.mt.intermediate.transform.post;
 
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
@@ -7,24 +7,22 @@ import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 
 import java.util.Map;
 
-public class LookAt extends AbstractTransform {
-    public LookAt() {
-        super(null, new NodeCriteria()
-                .withType("VP")
+public class ToBeNoun extends AbstractTransform {
+    public ToBeNoun() {
+        super("To be + существительное в именительном падеже", new NodeCriteria()
+                .withType("S")
                 .withInnerNodeCriterias(
                         new NodeCriteria()
-                                .withType("VB", "VBD", "VBZ")
-                                .withEngInfinitive("look")
-                                .named("look"),
+                                .withType("NP"),
                         new NodeCriteria()
-                                .withType("PP")
+                                .withType("VP")
                                 .withInnerNodeCriterias(
                                         new NodeCriteria()
-                                                .withType("IN")
-                                                .withEngInfinitive("at")
-                                                .named("at"),
+                                                .withType("VB", "VBP", "VBD", "VBZ")
+                                                .withEngInfinitive("be")
+                                                .named("be"),
                                         new NodeCriteria()
-                                                .withType("NP")
+                                                .withEngInfinitive("NP")
                                                 .withInnerNodeCriterias(
                                                         new NodeCriteria()
                                                                 .withType("NN", "NNS", "NNP", "NNPS", "PRP")
@@ -33,8 +31,7 @@ public class LookAt extends AbstractTransform {
 
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
-        queryResults.get("at").setRusInfinitive("на");
-        queryResults.get("look").setRusInfinitive("смотреть");
-        queryResults.get("noun").addGrammems(RussianGrammem.ACCUSATIVE);
+        queryResults.get("noun").addGrammems(RussianGrammem.NOMINATIVE);
+        queryResults.get("be").doNotTranslate();
     }
 }

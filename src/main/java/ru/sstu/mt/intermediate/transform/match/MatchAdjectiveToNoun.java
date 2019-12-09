@@ -9,10 +9,13 @@ import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 import ru.sstu.mt.util.StringUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static ru.sstu.mt.sklonyator.enums.GrammemCategory.*;
+import static ru.sstu.mt.sklonyator.enums.RussianGrammem.*;
 
 public class MatchAdjectiveToNoun extends AbstractMatch {
     public MatchAdjectiveToNoun(SklonyatorApi sklonyator) {
@@ -21,10 +24,10 @@ public class MatchAdjectiveToNoun extends AbstractMatch {
                         .withType("NP")
                         .withInnerNodeCriterias(
                                 new NodeCriteria()
-                                        .withType("JJ", "JJR", "JJS", "RB", "RBR", "RBS")
+                                        .withType("JJ", "JJR", "JJS", "RB", "RBR", "RBS", "PRP$")
                                         .named("adjective"),
                                 new NodeCriteria()
-                                        .withType("NN", "NNS")
+                                        .withType("NN", "NNS", "NNP", "NNPS")
                                         .named("noun")));
     }
 
@@ -35,12 +38,30 @@ public class MatchAdjectiveToNoun extends AbstractMatch {
         if (StringUtils.isNullOrEmpty(noun.getRusInfinitive()) || StringUtils.isNullOrEmpty(adjective.getRusInfinitive())) {
             return;
         }
-        GrammemsHolder holder = new GrammemsHolder();
-        noun.getGrammemsCollection().forEach(holder::add);
         try {
+            if (adjective.getType().equals("JJR") || adjective.getType().equals("RBR")) {
+                if (sklonyator.transform(adjective.getRusInfinitive(), Collections.singletonList(COMPARATIVE)).size() == 0) {
+                    adjective.setType(adjective.getType().equals("JJR") ? "JJ" : "RB");
+                    adjective.setRusTransformedPrefix("более");
+                    adjective.getGrammems().removeGrammem(COMPARATIVE);
+                } else {
+                    return;
+                }
+            } else if (adjective.getType().equals("JJS") || adjective.getType().equals("RBS")) {
+                if (sklonyator.transform(adjective.getRusInfinitive(), Collections.singletonList(COMPARATIVE)).size() == 0) {
+                    adjective.setRusTransformedPrefix("самый");
+                    adjective.getGrammems().removeGrammem(SUPERLATIVE);
+                }
+            }
+
+            GrammemsHolder holder = new GrammemsHolder();
+            noun.getGrammemsCollection().forEach(holder::add);
+
             List<RussianGrammem> grammems = sklonyator.getGrammems(noun.getRusInfinitive());
-            grammems.forEach(holder::addIfNone);
-            if (holder.get(QUANTITY) == RussianGrammem.PLURAL) {
+            grammems.stream()
+                    .filter(grammem -> Arrays.asList(QUANTITY, GENDER).contains(grammem.category))
+                    .forEach(holder::addIfNone);
+            if (holder.get(QUANTITY) == PLURAL) {
                 adjective.addGrammemsIfNone(holder.get(QUANTITY), holder.get(CASE));
             } else {
                 adjective.addGrammemsIfNone(holder.get(QUANTITY), holder.get(CASE), holder.get(GENDER));

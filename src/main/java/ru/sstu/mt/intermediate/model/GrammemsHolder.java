@@ -64,4 +64,16 @@ public class GrammemsHolder {
             addIfNone(THIRD_PERSON);
         }
     }
+
+    public void removeGrammem(RussianGrammem grammem) {
+        grammems.remove(grammem.category, grammem);
+    }
+
+    public void removeGrammem(GrammemCategory category) {
+        grammems.remove(category);
+    }
+
+    public void clear() {
+        grammems.clear();
+    }
 }

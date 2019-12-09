@@ -25,6 +25,12 @@ public class AccusativeForDependentNouns extends AbstractTransform {
 
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
-        queryResults.get("noun").addGrammemsIfNone(RussianGrammem.ACCUSATIVE);
+        IRNode noun = queryResults.get("noun");
+        IRNode verb = queryResults.get("verb");
+        if (verb.getEngInfinitive().equals("tell") && noun.getType().equals("PRP")) {
+            noun.addGrammemsIfNone(RussianGrammem.DATIVE);
+            return;
+        }
+        noun.addGrammemsIfNone(RussianGrammem.ACCUSATIVE);
     }
 }

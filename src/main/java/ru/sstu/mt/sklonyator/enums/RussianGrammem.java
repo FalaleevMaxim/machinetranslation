@@ -30,7 +30,9 @@ public enum RussianGrammem {
     IMPERATIVE(DEGREE, "пвл", "повелительное наклонение"),
     SUPERLATIVE(DEGREE, "прев", "превосходная степень"),
     COMPARATIVE(DEGREE, "сравн", "сравнительная  степень"),
-    QUALITY(DEGREE, "кач", "качественное прилагательное");
+    QUALITY(DEGREE, "кач", "качественное прилагательное"),
+    PASSIVE(VOICE, "стр", "страдательный залог"),
+    ACTIVE(VOICE, "дст", "действительный залог");
 
 
     public final GrammemCategory category;

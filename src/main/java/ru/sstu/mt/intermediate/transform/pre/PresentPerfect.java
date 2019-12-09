@@ -3,6 +3,7 @@ package ru.sstu.mt.intermediate.transform.pre;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
 import ru.sstu.mt.intermediate.transform.NodeCriteria;
+import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 
 import java.util.Map;
 
@@ -18,7 +19,6 @@ public class PresentPerfect extends AbstractTransform {
                                 .named("have"),
                         new NodeCriteria()
                                 .withType("VP")
-                                .named("vp")
                                 .withInnerNodeCriterias(
                                         new NodeCriteria()
                                                 .withType("VBN")
@@ -28,7 +28,6 @@ public class PresentPerfect extends AbstractTransform {
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
         queryResults.get("have").doNotTranslate();
-        //ToDo перевод VP или VBN в прошедшее время
-        //ToDo перевод VBN в совершенный вид (?)
+        queryResults.get("verb").addGrammems(RussianGrammem.PAST);
     }
 }

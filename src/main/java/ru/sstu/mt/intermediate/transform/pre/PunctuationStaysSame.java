@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class PunctuationStaysSame extends AbstractTransform {
     public PunctuationStaysSame() {
-        super(null, new NodeCriteria().withType("."));
+        super(null, new NodeCriteria().withType(".", ","));
     }
 
     @Override

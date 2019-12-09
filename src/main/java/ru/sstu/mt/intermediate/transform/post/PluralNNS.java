@@ -9,11 +9,20 @@ import java.util.Map;
 
 public class PluralNNS extends AbstractTransform {
     public PluralNNS() {
-        super(null, new NodeCriteria().withType("NNS", "NNPS"));
+        super(null,
+                new NodeCriteria()
+                        .withType("NNS", "NNPS")
+                        .withOtherConditions(
+                                // Слово dacha неверно определяется как NNS
+                                (node, vars) -> !node.getEngOriginal().equals("dacha")));
     }
 
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
+        //
+        if (ir.getEngOriginal().equals("dacha")) {
+            return;
+        }
         ir.addGrammems(RussianGrammem.PLURAL);
     }
 }

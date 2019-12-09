@@ -3,6 +3,7 @@ package ru.sstu.mt.intermediate.transform.pre.phrases;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
 import ru.sstu.mt.intermediate.transform.NodeCriteria;
+import ru.sstu.mt.sklonyator.enums.RussianGrammem;
 
 import java.util.Map;
 
@@ -45,6 +46,6 @@ public class MakeSureTo extends AbstractTransform {
         queryResults.get("make").setRusInfinitive("убедиться");
         queryResults.get("sure").doNotTranslate();
         queryResults.get("to").setRusInfinitive("что");
-        //ToDo перевести vb в прошедшее время, совершенный вид (?)
+        queryResults.get("vb").addGrammems(RussianGrammem.PAST);
     }
 }
