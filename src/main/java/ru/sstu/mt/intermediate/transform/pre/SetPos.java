@@ -32,6 +32,7 @@ public class SetPos extends AbstractTransform {
                 break;
             case "JJ":
                 ir.setPos(ADJ);
+                ir.addPosForDictionary(PARTICIPLE);
             case "JJR":
             case "JJS":
                 ir.addPosForDictionary(ADJ, SHORT_ADJ, PRONOUN_ADJ);

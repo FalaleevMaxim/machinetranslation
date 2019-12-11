@@ -18529,7 +18529,7 @@ concerning
 concernment
 важность
 concert
-сговариваться	согласие	концерт
+концерт
 concerted
 сговариваться	согласованный
 concerted float

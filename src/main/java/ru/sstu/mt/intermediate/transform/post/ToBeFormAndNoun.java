@@ -4,29 +4,26 @@ import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.AbstractTransform;
 import ru.sstu.mt.intermediate.transform.NodeCriteria;
 import ru.sstu.mt.sklonyator.enums.RussianGrammem;
-import ru.sstu.mt.sklonyator.enums.RussianPos;
 
 import java.util.Map;
 
 /**
  * Пример
- * I want to be a programmer
+ * I am a student
  */
-public class ToBeNoun extends AbstractTransform {
-    public ToBeNoun() {
-        super("To be + существительное в творительном падеже", new NodeCriteria()
-                .withType("VP")
+public class ToBeFormAndNoun extends AbstractTransform {
+    public ToBeFormAndNoun() {
+        super("To be + существительное в именительном падеже", new NodeCriteria()
+                .withType("S")
                 .withInnerNodeCriterias(
                         new NodeCriteria()
-                                .withType("TO")
-                                .withEngInfinitive("to")
-                                .named("to"),
+                                .withType("NP"),
                         new NodeCriteria()
                                 .withType("VP")
                                 .withInnerNodeCriterias(
                                         new NodeCriteria()
-                                                .withType("VB")
-                                                .withEngOriginal("be")
+                                                .withType("VB", "VBP", "VBD", "VBZ")
+                                                .withEngInfinitive("be")
                                                 .named("be"),
                                         new NodeCriteria()
                                                 .withType("NP")
@@ -38,12 +35,7 @@ public class ToBeNoun extends AbstractTransform {
 
     @Override
     public void perform(IRNode ir, Map<String, IRNode> queryResults) {
-        IRNode to = queryResults.get("to");
-        IRNode be = queryResults.get("be");
-        IRNode noun = queryResults.get("noun");
-        to.doNotTranslate();
-        be.setPos(RussianPos.VERB_INF);
-        be.getGrammems().clear();
-        noun.addGrammems(RussianGrammem.INSTRUMENTAL);
+        queryResults.get("noun").addGrammems(RussianGrammem.NOMINATIVE);
+        queryResults.get("be").doNotTranslate();
     }
 }

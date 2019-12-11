@@ -53,7 +53,7 @@ public class CaseByPreposition extends AbstractTransform {
                     noun.addGrammemsIfNone(ACCUSATIVE);
                     prep.setRusInfinitive("в");
                     prep.setRusTransformed("в");
-                } else if (Arrays.asList("roof", "dacha", "storage").contains(noun.getEngInfinitive())) {
+                } else if (Arrays.asList("roof", "dacha", "storage", "concert").contains(noun.getEngInfinitive())) {
                     prep.setRusInfinitive("на");
                     prep.setRusTransformed("на");
                     noun.addGrammemsIfNone(ACCUSATIVE);

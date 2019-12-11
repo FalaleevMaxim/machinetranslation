@@ -13,10 +13,7 @@ import ru.sstu.mt.analysis.stanfordnlp.StanfordNlpSource;
 import ru.sstu.mt.dictionary.Dictionary;
 import ru.sstu.mt.intermediate.model.IRNode;
 import ru.sstu.mt.intermediate.transform.IRTransform;
-import ru.sstu.mt.intermediate.transform.match.MatchAdjectiveAfterNoun;
-import ru.sstu.mt.intermediate.transform.match.MatchAdjectiveToNoun;
-import ru.sstu.mt.intermediate.transform.match.MatchVerbToNoun;
-import ru.sstu.mt.intermediate.transform.match.WillFuture;
+import ru.sstu.mt.intermediate.transform.match.*;
 import ru.sstu.mt.intermediate.transform.post.*;
 import ru.sstu.mt.intermediate.transform.pre.*;
 import ru.sstu.mt.intermediate.transform.pre.phrases.DativeForNeed;
@@ -46,6 +43,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ru.sstu.mt.pipeline.PipelineEvent.*;
+import static ru.sstu.mt.sklonyator.enums.RussianGrammem.PASSIVE;
+import static ru.sstu.mt.sklonyator.enums.RussianGrammem.PAST;
+import static ru.sstu.mt.sklonyator.enums.RussianPos.PARTICIPLE;
 
 public class Pipeline {
     private static final String DEFAULT_DICTIONARY_RESOURCE = "ENRUS.TXT";
@@ -73,6 +73,7 @@ public class Pipeline {
             new CaseByPreposition(),
             new HaveTo(),
             new DativeForNeed(),
+            new ToBeFormAndNoun(),
             new ToBeNoun()
     );
     public static final List<IRTransform> ALL_POST_TRANSLATE_RULES = Arrays.asList(
@@ -90,8 +91,10 @@ public class Pipeline {
     public static final List<Function<SklonyatorApi, IRTransform>> ALL_MATCHING_RULES = Arrays.asList(
             WillFuture::new,
             MatchAdjectiveToNoun::new,
+            MatchSecondAdjectiveToNoun::new,
             MatchAdjectiveAfterNoun::new,
-            MatchVerbToNoun::new
+            MatchVerbToNoun::new,
+            MatchVerbToSecondNoun::new
     );
 
     private PipelineLogger logger = PipelineLogger.getLogger();
@@ -434,6 +437,15 @@ public class Pipeline {
                                 .collect(Collectors.toList());
                         if (!byPossible.isEmpty()) {
                             transformed = byPossible.get(0).getWord();
+                            //Для JJ, заканчивающегося на ed (fried) предпочесть действительное причастие прошедшего времени, если такое есть
+                            if (leaf.getType().equals("JJ") && leaf.getEngOriginal().endsWith("ed")) {
+                                transformed = byPossible.stream()
+                                        .filter(wi -> wi.getPos() == PARTICIPLE)
+                                        .filter(wi -> wi.getGrammems().containsAll(Arrays.asList(PASSIVE, PAST)))
+                                        .findFirst()
+                                        .map(WordFormInfo::getWord)
+                                        .orElse(transformed);
+                            }
                             if (byPossible.size() > 1) {
                                 logger.logEvent(String.format(
                                         "Multiple options to transform \"%s\" to form %s with possible parts of speech %s:\n%s\nSelected: %s\n",
